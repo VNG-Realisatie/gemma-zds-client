@@ -18,6 +18,6 @@ def get_operation_url(spec: dict, operation: str, **kwargs) -> str:
                 format_kwargs = DEFAULT_PATH_PARAMETERS.copy()
                 format_kwargs.update(**kwargs)
                 path = path.format(**format_kwargs)
-                return f"{base_path}{path}"
+                return '{base_path}{path}'.format(base_path=base_path, path=path)
 
-    raise ValueError(f"Operation {operation} not found")
+    raise ValueError('Operation {operation} not found'.format(operation=operation))

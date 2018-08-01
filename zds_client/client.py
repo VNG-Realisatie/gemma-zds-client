@@ -8,6 +8,7 @@ from urllib.parse import urljoin
 import requests
 import yaml
 
+from .log import Log
 from .schema import get_operation_url
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,11 @@ class Swagger2OpenApi:
             with open(infile, 'wb') as _infile:
                 _infile.write(self.swagger)
 
-            cmd = f'node_modules/.bin/swagger2openapi {infile} --outfile {outfile}'
+            cmd = '{bin} {infile} --outfile {outfile}'.format(
+                bin=os.path.join(*'node_modules/.bin/swagger2openapi'.split('/')),
+                infile=infile,
+                outfile=outfile,
+            )
             subprocess.call(cmd, shell=True, cwd=BASE_DIR)
 
             with open(outfile, 'rb') as _outfile:
@@ -85,6 +90,7 @@ def get_headers(spec: dict, operation: str) -> dict:
 class Client:
 
     _schema = None
+    _log = Log()
 
     CONFIG = None
 
@@ -111,6 +117,13 @@ class Client:
                 cls.config[alias].update(config)
 
     @property
+    def log(self):
+        """
+        Local log entries.
+        """
+        return (entry for entry in self._log.entries() if entry['service'] == self.service)
+
+    @property
     def base_url(self) -> str:
         if self.CONFIG is None:
             raise RuntimeError("You need to load the config first through `Client.load_config(path)`")
@@ -118,7 +131,12 @@ class Client:
             config = self.CONFIG[self.service]
         except KeyError:
             raise KeyError(f"Service {self.service} unknown, did you specify it in the config?")
-        return f"{config['scheme']}://{config['host']}:{config['port']}{self.base_path}"
+        return "{scheme}://{host}:{port}{path}".format(
+            scheme=config['scheme'],
+            host=config['host'],
+            port=config['port'],
+            path=self.base_path,
+        )
 
     @property
     def schema(self):
@@ -133,7 +151,24 @@ class Client:
         headers.setdefault('Content-Type', 'application/json')
         headers.update(get_headers(self.schema, operation))
         kwargs['headers'] = headers
-        return requests.request(method, url, **kwargs)
+        response = requests.request(method, url, **kwargs)
+        try:
+            response_json = response.json()
+        except Exception:
+            response_json = None
+
+        self._log.add(
+            self.service,
+            url,
+            method,
+            headers,
+            kwargs.get('data', kwargs.get('json', None)),
+            response.status_code if response else None,
+            dict(response.headers) if response else None,
+            response_json,
+        )
+
+        return response
 
     def fetch_schema(self):
         url = urljoin(self.base_url, 'schema/openapi.yaml')
@@ -142,22 +177,28 @@ class Client:
         self._schema = swagger2openapi.convert()
 
     def list(self, resource: str, **path_kwargs):
-        operation_id = f'{resource}_list'
+        operation_id = '{resource}_list'.format(resource=resource)
         url = get_operation_url(self.schema, operation_id, **path_kwargs)
         response = self.request(url, operation_id)
         assert response.status_code == 200, response.json()
         return response.json()
 
     def retrieve(self, resource: str, **path_kwargs):
-        operation_id = f'{resource}_read'
+        operation_id = '{resource}_read'.format(resource=resource)
         url = get_operation_url(self.schema, operation_id, **path_kwargs)
         response = self.request(url, operation_id)
         assert response.status_code == 200, response.json()
         return response.json()
 
     def create(self, resource: str, data: dict, **path_kwargs):
-        operation_id = f'{resource}_create'
+        operation_id = '{resource}_create'.format(resource=resource)
         url = get_operation_url(self.schema, operation_id, **path_kwargs)
         response = self.request(url, operation_id, method='POST', json=data)
         assert response.status_code == 201, response.json()
+        return response.json()
+
+    def operation(self, operation_id: str, data: dict, **path_kwargs):
+        url = get_operation_url(self.schema, operation_id, **path_kwargs)
+        response = self.request(url, method='POST', json=data)
+        assert response.status_code == 200, response.json()
         return response.json()
