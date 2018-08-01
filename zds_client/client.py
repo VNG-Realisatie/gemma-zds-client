@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import subprocess
@@ -9,28 +10,14 @@ import yaml
 
 from .schema import get_operation_url
 
+logger = logging.getLogger(__name__)
+
+
 # TODO: clean this up
 BASE_DIR = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
     os.path.pardir,
 ))
-
-CONFIG_FILE = os.path.join(BASE_DIR, 'config.yml')
-
-CONFIG = {}
-
-
-def load_config() -> dict:
-    """
-    Read the configuration of the services from the config file.
-
-    .. todo:: allow overrides from environment variables
-    """
-    if CONFIG == {}:
-        with open(CONFIG_FILE, 'r') as _config:
-            CONFIG.update(yaml.safe_load(_config))
-
-    return CONFIG
 
 
 class Swagger2OpenApi:
@@ -42,6 +29,7 @@ class Swagger2OpenApi:
         self.swagger = swagger
 
     def convert(self) -> dict:
+        # FIXME: need to find the install of the converter
         tempdir = tempfile.mkdtemp()
 
         infile = os.path.join(tempdir, 'swagger2.0.yaml')
@@ -98,13 +86,38 @@ class Client:
 
     _schema = None
 
+    CONFIG = None
+
     def __init__(self, service: str, base_path: str='/api/v1/'):
         self.service = service
         self.base_path = base_path
 
+    @classmethod
+    def load_config(cls, path: str=None, **manual):
+        if cls.CONFIG is not None:
+            logger.warning("Re-configuring clients")
+        else:
+            cls.CONFIG = {}
+
+        if path is not None:
+            logger.info("Loading config from %s", path)
+            with open(path, 'r') as _config:
+                cls.CONFIG.update(yaml.safe_load(_config))
+
+        if manual:
+            logger.info("Applying manual config: %r", manual)
+            for alias, config in manual.items():
+                cls.config.setdefault(alias, {})
+                cls.config[alias].update(config)
+
     @property
     def base_url(self) -> str:
-        config = load_config()[self.service]
+        if self.CONFIG is None:
+            raise RuntimeError("You need to load the config first through `Client.load_config(path)`")
+        try:
+            config = self.CONFIG[self.service]
+        except KeyError:
+            raise KeyError(f"Service {self.service} unknown, did you specify it in the config?")
         return f"{config['scheme']}://{config['host']}:{config['port']}{self.base_path}"
 
     @property
