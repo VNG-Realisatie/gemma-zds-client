@@ -1,0 +1,21 @@
+---
+
+zrc:
+  scheme: http
+  host: localhost
+  port: 8000
+
+drc:
+  scheme: http
+  host: localhost
+  port: 8001
+
+ztc:
+  scheme: http
+  host: localhost
+  port: 8002
+
+orc:
+  scheme: http
+  host: localhost
+  port: 8003

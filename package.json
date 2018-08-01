@@ -1,0 +1,33 @@
+{
+  "name": "gemma-zds-client",
+  "version": "0.0.1",
+  "description": "Convertor voor OAS 2.0 -> 3.0",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VNG-Realisatie/gemma-zds-client.git"
+  },
+  "keywords": [
+    "gemma",
+    "zaken",
+    "client",
+    "zrc",
+    "drc",
+    "ztc"
+  ],
+  "author": "VNG-Realisatie",
+  "license": "EUPL-1.2",
+  "bugs": {
+    "url": "https://github.com/VNG-Realisatie/gemma-zds-client/issues"
+  },
+  "homepage": "https://github.com/VNG-Realisatie/gemma-zds-client",
+  "dependencies": {
+    "swagger2openapi": "^2.11.16"
+  }
+}
