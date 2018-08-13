@@ -96,7 +96,7 @@ gebruik maken van Python dictonaries, bijvoorbeeld:
         'port': 8001,
     }
 
-    Client.load_config({
+    Client.load_config(**{
         'zrc': ZRC,
         'drc': DRC,
         ...
