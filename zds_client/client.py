@@ -121,8 +121,8 @@ class Client:
         if manual:
             logger.info("Applying manual config: %r", manual)
             for alias, config in manual.items():
-                cls.config.setdefault(alias, {})
-                cls.config[alias].update(config)
+                cls.CONFIG.setdefault(alias, {})
+                cls.CONFIG[alias].update(config)
 
     @property
     def log(self):
