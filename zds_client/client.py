@@ -14,19 +14,13 @@ from .schema import get_operation_url
 logger = logging.getLogger(__name__)
 
 
-# TODO: clean this up
-BASE_DIR = os.path.abspath(os.path.join(
-    os.path.dirname(__file__),
-    os.path.pardir,
-))
-
-
 class Swagger2OpenApi:
     """
     Wrapper around node swagger2openapi
     """
 
-    def __init__(self, swagger: bytes):
+    def __init__(self, base_dir: str, swagger: bytes):
+        self.base_dir = base_dir
         self.swagger = swagger
 
     def convert(self) -> dict:
@@ -45,7 +39,7 @@ class Swagger2OpenApi:
                 infile=infile,
                 outfile=outfile,
             )
-            subprocess.call(cmd, shell=True, cwd=BASE_DIR)
+            subprocess.call(cmd, shell=True, cwd=self.base_dir)
 
             with open(outfile, 'rb') as _outfile:
                 return yaml.safe_load(_outfile)
@@ -99,7 +93,21 @@ class Client:
         self.base_path = base_path
 
     @classmethod
-    def load_config(cls, path: str=None, **manual):
+    def load_config(cls, base_dir: str, path: str=None, **manual):
+        """
+        Initialize the client configuration.
+
+        The configuration is stored on the client class, so multiple instances
+        of the client share the same configuration.
+
+        :param base_dir: the root of the project where the client is used. This
+          should be the directory containing ``node_modules``.
+        :param path: path to the yaml file holding the config
+        :param manual: any manual overrides, as kwargs. Note this completely
+          overwrites any existing config in the YAML file if specified.
+        """
+        cls.base_dir = base_dir
+
         if cls.CONFIG is not None:
             logger.warning("Re-configuring clients")
         else:
@@ -173,7 +181,7 @@ class Client:
     def fetch_schema(self):
         url = urljoin(self.base_url, 'schema/openapi.yaml')
         response = requests.get(url)
-        swagger2openapi = Swagger2OpenApi(response.content)
+        swagger2openapi = Swagger2OpenApi(self.base_dir, response.content)
         self._schema = swagger2openapi.convert()
 
     def list(self, resource: str, **path_kwargs):
@@ -199,6 +207,6 @@ class Client:
 
     def operation(self, operation_id: str, data: dict, **path_kwargs):
         url = get_operation_url(self.schema, operation_id, **path_kwargs)
-        response = self.request(url, method='POST', json=data)
+        response = self.request(url, operation_id, method='POST', json=data)
         assert response.status_code == 200, response.json()
         return response.json()
