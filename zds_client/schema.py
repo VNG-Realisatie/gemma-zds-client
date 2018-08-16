@@ -5,7 +5,7 @@ DEFAULT_PATH_PARAMETERS = {
 }
 
 
-def get_operation_url(spec: dict, operation: str, **kwargs) -> str:
+def get_operation_url(spec: dict, operation: str, pattern_only=False, **kwargs) -> str:
     url = spec['servers'][0]['url']
     base_path = urlparse(url).path
 
@@ -17,7 +17,8 @@ def get_operation_url(spec: dict, operation: str, **kwargs) -> str:
             if method['operationId'] == operation:
                 format_kwargs = DEFAULT_PATH_PARAMETERS.copy()
                 format_kwargs.update(**kwargs)
-                path = path.format(**format_kwargs)
+                if not pattern_only:
+                    path = path.format(**format_kwargs)
                 return '{base_path}{path}'.format(base_path=base_path, path=path)
 
     raise ValueError('Operation {operation} not found'.format(operation=operation))
