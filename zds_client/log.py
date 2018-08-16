@@ -6,7 +6,9 @@ class Log:
     max_entries = 100
 
     @classmethod
-    def add(cls, service, url, method, request_headers, request_data, response_status, response_headers, response_data):
+    def add(cls, service: str, url: str, method: str, request_headers: dict,
+            request_data: dict, response_status: int, response_headers: dict,
+            response_data: dict, params: dict=None):
         # Definitly not thread-safe
         if len(cls._entries) >= cls.max_entries:
             cls._entries.pop(0)
@@ -19,6 +21,7 @@ class Log:
                 'method': method,
                 'headers': request_headers,
                 'data': request_data,
+                'params': params,
             },
             'response': {
                 'status': response_status,

@@ -174,6 +174,7 @@ class Client:
             response.status_code if response else None,
             dict(response.headers) if response else None,
             response_json,
+            params=kwargs.get('params'),
         )
 
         return response
@@ -184,10 +185,10 @@ class Client:
         swagger2openapi = Swagger2OpenApi(self.base_dir, response.content)
         self._schema = swagger2openapi.convert()
 
-    def list(self, resource: str, **path_kwargs):
+    def list(self, resource: str, query_params=None, **path_kwargs):
         operation_id = '{resource}_list'.format(resource=resource)
         url = get_operation_url(self.schema, operation_id, **path_kwargs)
-        response = self.request(url, operation_id)
+        response = self.request(url, operation_id, params=query_params)
         assert response.status_code == 200, response.json()
         return response.json()
 
