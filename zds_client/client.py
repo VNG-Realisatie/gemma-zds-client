@@ -1,9 +1,10 @@
 import logging
 import os
+import re
 import shutil
 import subprocess
 import tempfile
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 import yaml
@@ -124,6 +125,33 @@ class Client:
                 cls.CONFIG.setdefault(alias, {})
                 cls.CONFIG[alias].update(config)
 
+    @classmethod
+    def from_url(cls, url: str, base_dir: str) -> 'Client':
+        parsed_url = urlparse(url)
+
+        if ':' in parsed_url.netloc:
+            host, port = parsed_url.netloc.split(':')
+        else:
+            host = parsed_url.netloc
+            port = 443 if parsed_url.scheme == 'https' else 80
+
+        # we'll be very pragmatic for now to figure out the base path...
+        base_path = re.match(
+            r'(?P<basepath>.*api/v\d/)',
+            parsed_url.path
+        ).group('basepath')
+
+        client = cls('ad-hoc', base_path)
+        client.base_dir = base_dir
+        client.CONFIG = {
+            'ad-hoc': {
+                'scheme': parsed_url.scheme,
+                'host': host,
+                'port': port,
+            }
+        }
+        return client
+
     @property
     def log(self):
         """
@@ -182,6 +210,7 @@ class Client:
     def fetch_schema(self):
         url = urljoin(self.base_url, 'schema/openapi.yaml')
         response = requests.get(url)
+        response.raise_for_status()
         swagger2openapi = Swagger2OpenApi(self.base_dir, response.content)
         self._schema = swagger2openapi.convert()
 
