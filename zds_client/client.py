@@ -14,6 +14,11 @@ from .schema import get_operation_url
 
 logger = logging.getLogger(__name__)
 
+UUID_PATTERN = re.compile(
+    r'[0-9a-f]{8}\-[0-9a-f]{4}\-4[0-9a-f]{3}\-[89ab][0-9a-f]{3}\-[0-9a-f]{12}',
+    flags=re.I
+)
+
 
 class Swagger2OpenApi:
     """
@@ -126,8 +131,8 @@ class Client:
                 cls.CONFIG[alias].update(config)
 
     @classmethod
-    def from_url(cls, url: str, base_dir: str) -> 'Client':
-        parsed_url = urlparse(url)
+    def from_url(cls, detail_url: str, base_dir: str) -> 'Client':
+        parsed_url = urlparse(detail_url)
 
         if ':' in parsed_url.netloc:
             host, port = parsed_url.netloc.split(':')
@@ -135,11 +140,17 @@ class Client:
             host = parsed_url.netloc
             port = 443 if parsed_url.scheme == 'https' else 80
 
-        # we'll be very pragmatic for now to figure out the base path...
-        base_path = re.match(
-            r'(?P<basepath>.*api/v\d/)',
-            parsed_url.path
-        ).group('basepath')
+        # we know that API endpoints look like:
+        # - /base_path/collection/<uuid> or
+        # - /base_path/collection/<uuid>/subcollection or
+        # - /base_path/collection/<uuid>/subcollection/<uuid>
+        # So, splitting on UUIDs gives us the base_path + collection
+        bits = re.split(UUID_PATTERN, parsed_url.path)
+        base_path = (
+            bits[0]
+            .rstrip('/')
+            .rsplit('/', 1)
+        )[0] + '/'
 
         client = cls('ad-hoc', base_path)
         client.base_dir = base_dir
