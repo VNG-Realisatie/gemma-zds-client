@@ -199,6 +199,7 @@ class Client:
         headers.update(get_headers(self.schema, operation))
         kwargs['headers'] = headers
         response = requests.request(method, url, **kwargs)
+        response.raise_for_status()
         try:
             response_json = response.json()
         except Exception:
