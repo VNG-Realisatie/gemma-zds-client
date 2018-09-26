@@ -138,7 +138,7 @@ class Schema:
         """
         Perform lookup of schema reference to the actual schema.
         """
-        is_collection = schema['type'] == TYPE_ARRAY
+        is_collection = schema.get('type') == TYPE_ARRAY
 
         if is_collection:
             ref = schema['items']['$ref']
