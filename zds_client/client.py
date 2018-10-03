@@ -87,6 +87,10 @@ def get_headers(spec: dict, operation: str) -> dict:
     return headers
 
 
+class ClientError(Exception):
+    pass
+
+
 class Client:
 
     _schema = None
@@ -199,7 +203,7 @@ class Client:
         headers.update(get_headers(self.schema, operation))
         kwargs['headers'] = headers
         response = requests.request(method, url, **kwargs)
-        response.raise_for_status()
+
         try:
             response_json = response.json()
         except Exception:
@@ -216,6 +220,13 @@ class Client:
             response_json,
             params=kwargs.get('params'),
         )
+
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            if response.status_code >= 500:
+                raise
+            raise ClientError(response_json) from exc
 
         return response
 
