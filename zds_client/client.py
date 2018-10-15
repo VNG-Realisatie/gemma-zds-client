@@ -232,7 +232,9 @@ class Client:
 
     def fetch_schema(self):
         url = urljoin(self.base_url, 'schema/openapi.yaml')
+        logger.info("Fetching schema at '%s'", url)
         response = requests.get(url)
+        logger.info("Schema fetching response code: %s", response.status_code)
         response.raise_for_status()
         swagger2openapi = Swagger2OpenApi(self.base_dir, response.content)
         self._schema = swagger2openapi.convert()
