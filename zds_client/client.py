@@ -248,7 +248,7 @@ class Client:
 
     def retrieve(self, resource: str, url=None, **path_kwargs):
         operation_id = '{resource}_read'.format(resource=resource)
-        if not url:
+        if url is None:
             url = get_operation_url(self.schema, operation_id, **path_kwargs)
         response = self.request(url, operation_id)
         assert response.status_code == 200, response.json()
