@@ -147,6 +147,9 @@ manipuleren:
     # opvragen
     zaak = zrc_client.retrieve('zaak', uuid='<uuid>')
 
+    # opvragen met URL
+    zaak = zrc_client.retrieve('zaak', url='<zaak_url>')
+
     # aanmaken
     zaak = zrc_client.create('zaak', {
         'bronorganisatie': '000000000',
