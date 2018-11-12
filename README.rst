@@ -17,6 +17,7 @@ Features
 * Generieke opzet, maar specifiek gebruik in de zaakgericht-werken services
 * Introspectie in het OAS schema: lees op basis van een resource URL uit wat
   er precies hoort achter deze URL te zitten.
+* ZDS autorisatiemodel via JWT out-of-the-box ondersteund.
 
 Geplande features
 -----------------
@@ -65,6 +66,11 @@ De makkelijkste manier is configuratie via een ``yaml`` bestand, in het formaat:
       scheme: http
       host: localhost
       port: 8000
+      auth:
+        client_id: my-zrc-client-id
+        secret: my-zrc-client-secret
+        scopes:
+          - zds.scopes.zaken.aanmaken
 
     drc:
       scheme: http
@@ -130,6 +136,8 @@ URL.
    server MOET OAS 3.0 serveren. Dit betekent dat dan OAS 2.0 support
    gedropped wordt.
 
+.. note::
+   Deze workflow ondersteund momenteel nog geen AUTH.
 
 Resources manipuleren
 ---------------------
