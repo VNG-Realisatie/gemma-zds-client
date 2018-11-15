@@ -1,4 +1,5 @@
 import time
+import warnings
 
 import jwt
 
@@ -24,6 +25,11 @@ class ClientAuth:
 
     def __init__(self, client_id: str, secret: str, **claims):
         self.client_id = client_id
+
+        if secret is None:
+            warnings.warn("`None` secret received -  casting to empty string", UserWarning)
+            secret = ''
+
         self.secret = secret
 
         self.claims = claims
