@@ -9,6 +9,7 @@ from urllib.parse import urljoin, urlparse
 import requests
 import yaml
 
+from .auth import ClientAuth
 from .log import Log
 from .schema import get_operation_url
 
@@ -98,9 +99,26 @@ class Client:
 
     CONFIG = None
 
+    auth = None
+
     def __init__(self, service: str, base_path: str='/api/v1/'):
         self.service = service
         self.base_path = base_path
+
+        self._init_auth()
+
+    def _init_auth(self):
+        """
+        (Re)-initialize the auth.
+        """
+        # possible in the `from_url` branch -> can't set up auth (yet)
+        if self.CONFIG is None:
+            self.auth = None
+            return
+
+        auth = self.CONFIG[self.service].get('auth')
+        if auth is not None:
+            self.auth = ClientAuth(**auth)
 
     @classmethod
     def load_config(cls, base_dir: str, path: str=None, **manual):
@@ -201,6 +219,10 @@ class Client:
         headers.setdefault('Accept', 'application/json')
         headers.setdefault('Content-Type', 'application/json')
         headers.update(get_headers(self.schema, operation))
+
+        if self.auth:
+            headers.update(self.auth.credentials())
+
         kwargs['headers'] = headers
         response = requests.request(method, url, **kwargs)
 
