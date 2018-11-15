@@ -99,18 +99,25 @@ class Client:
 
     CONFIG = None
 
+    auth = None
+
     def __init__(self, service: str, base_path: str='/api/v1/'):
         self.service = service
         self.base_path = base_path
 
+        self._init_auth()
+
+    def _init_auth(self):
+        """
+        (Re)-initialize the auth.
+        """
         # possible in the `from_url` branch -> can't set up auth (yet)
         if self.CONFIG is None:
+            self.auth = None
             return
 
-        auth = self.CONFIG[service].get('auth')
-        if auth is None:
-            self.auth = None
-        else:
+        auth = self.CONFIG[self.service].get('auth')
+        if auth is not None:
             self.auth = ClientAuth(**auth)
 
     @classmethod

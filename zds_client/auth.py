@@ -22,14 +22,11 @@ class ClientAuth:
     >>> requests.get(url, **auth.credentials())
     """
 
-    def __init__(self, client_id: str, secret: str, scopes: list):
+    def __init__(self, client_id: str, secret: str, **claims):
         self.client_id = client_id
         self.secret = secret
 
-        self.claims = {
-            'scopes': scopes,
-            'zaaktypes': [],
-        }
+        self.claims = claims
 
     def set_claims(self, **kwargs) -> None:
         """
