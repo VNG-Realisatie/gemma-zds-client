@@ -108,6 +108,8 @@ class Client:
         self.service = service
         self.base_path = base_path
 
+        self._base_url = None
+
         self._init_auth()
 
     def _init_auth(self):
@@ -195,8 +197,10 @@ class Client:
         """
         return (entry for entry in self._log.entries() if entry['service'] == self.service)
 
-    @property
-    def base_url(self) -> str:
+    def _get_base_url(self) -> str:
+        if self._base_url is not None:
+            return self._base_url
+
         if self.CONFIG is None:
             raise RuntimeError("You need to load the config first through `Client.load_config(path)`")
         try:
@@ -209,6 +213,11 @@ class Client:
             port=config['port'],
             path=self.base_path,
         )
+
+    def _set_base_url(self, base_url: str) -> None:
+        self._base_url = base_url
+
+    base_url = property(_get_base_url, _set_base_url)
 
     @property
     def schema(self):
