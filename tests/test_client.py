@@ -12,5 +12,5 @@ from zds_client import Client
      'informatieobjecten/a7bdfe04-fb17-46f8-9884-541f5d7611f8', '/api/v1/'),
 ])
 def test_client_from_detail_url(detail_url, expected_base_path):
-    client = Client.from_url(detail_url, '/tmp')
+    client = Client.from_url(detail_url)
     assert client.base_path == expected_base_path

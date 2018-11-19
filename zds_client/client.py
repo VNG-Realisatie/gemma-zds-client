@@ -1,9 +1,5 @@
 import logging
-import os
 import re
-import shutil
-import subprocess
-import tempfile
 from typing import Any, Dict, List, Union
 from urllib.parse import urljoin, urlparse
 
@@ -22,40 +18,6 @@ UUID_PATTERN = re.compile(
     r'[0-9a-f]{8}\-[0-9a-f]{4}\-4[0-9a-f]{3}\-[89ab][0-9a-f]{3}\-[0-9a-f]{12}',
     flags=re.I
 )
-
-
-class Swagger2OpenApi:
-    """
-    Wrapper around node swagger2openapi
-    """
-
-    def __init__(self, base_dir: str, swagger: bytes):
-        self.base_dir = base_dir
-        self.swagger = swagger
-
-    def convert(self) -> dict:
-        # FIXME: need to find the install of the converter
-        tempdir = tempfile.mkdtemp()
-
-        infile = os.path.join(tempdir, 'swagger2.0.yaml')
-        outfile = os.path.join(tempdir, 'openapi.yaml')
-
-        try:
-            with open(infile, 'wb') as _infile:
-                _infile.write(self.swagger)
-
-            cmd = '{bin} {infile} --outfile {outfile}'.format(
-                bin=os.path.join(*'node_modules/.bin/swagger2openapi'.split('/')),
-                infile=infile,
-                outfile=outfile,
-            )
-            subprocess.call(cmd, shell=True, cwd=self.base_dir)
-
-            with open(outfile, 'rb') as _outfile:
-                return yaml.safe_load(_outfile)
-
-        finally:
-            shutil.rmtree(tempdir)
 
 
 def get_headers(spec: dict, operation: str) -> dict:
@@ -126,21 +88,17 @@ class Client:
             self.auth = ClientAuth(**auth)
 
     @classmethod
-    def load_config(cls, base_dir: str, path: str=None, **manual):
+    def load_config(cls, path: str=None, **manual):
         """
         Initialize the client configuration.
 
         The configuration is stored on the client class, so multiple instances
         of the client share the same configuration.
 
-        :param base_dir: the root of the project where the client is used. This
-          should be the directory containing ``node_modules``.
         :param path: path to the yaml file holding the config
         :param manual: any manual overrides, as kwargs. Note this completely
           overwrites any existing config in the YAML file if specified.
         """
-        cls.base_dir = base_dir
-
         if cls.CONFIG is not None:
             logger.warning("Re-configuring clients")
         else:
@@ -158,7 +116,7 @@ class Client:
                 cls.CONFIG[alias].update(config)
 
     @classmethod
-    def from_url(cls, detail_url: str, base_dir: str) -> 'Client':
+    def from_url(cls, detail_url: str) -> 'Client':
         parsed_url = urlparse(detail_url)
 
         if ':' in parsed_url.netloc:
@@ -180,7 +138,6 @@ class Client:
         )[0] + '/'
 
         client = cls('ad-hoc', base_path)
-        client.base_dir = base_dir
         client.CONFIG = {
             'ad-hoc': {
                 'scheme': parsed_url.scheme,
@@ -281,11 +238,16 @@ class Client:
     def fetch_schema(self):
         url = urljoin(self.base_url, 'schema/openapi.yaml')
         logger.info("Fetching schema at '%s'", url)
-        response = requests.get(url)
+        response = requests.get(url, {'v': '3'})
         logger.info("Schema fetching response code: %s", response.status_code)
         response.raise_for_status()
-        swagger2openapi = Swagger2OpenApi(self.base_dir, response.content)
-        self._schema = swagger2openapi.convert()
+
+        spec = yaml.safe_load(response.content)
+        spec_version = response.headers.get('X-OAS-Version', spec.get('openapi', spec.get('swagger', '')))
+        if not spec_version.startswith('3.0'):
+            raise ValueError("Unsupported spec version: {}".format(spec_version))
+
+        self._schema = spec
 
     def list(self, resource: str, query_params=None, **path_kwargs) -> List[Object]:
         operation_id = '{resource}_list'.format(resource=resource)
