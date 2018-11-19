@@ -14,3 +14,41 @@ from zds_client import Client
 def test_client_from_detail_url(detail_url, expected_base_path):
     client = Client.from_url(detail_url)
     assert client.base_path == expected_base_path
+
+
+def test_client_loading():
+    Client.load_config(zrc={
+        'scheme': 'http',
+        'host': 'localhost',
+        'port': 8000,
+    })
+
+    client = Client('zrc')
+    assert client.base_url == 'http://localhost:8000/api/v1/'
+
+    # reset class
+    # FIXME: this is very un-pythonic, find a better caching solution
+    Client.CONFIG = None
+
+
+def test_load_with_auth():
+    Client.load_config(zrc={
+        'scheme': 'http',
+        'host': 'localhost',
+        'port': 8000,
+        'auth': {
+            'client_id': 'foo',
+            'secret': 'bar',
+        }
+    })
+
+    client = Client('zrc')
+    credentials = client.auth.credentials()
+
+    assert 'Authorization' in credentials
+    bits = credentials['Authorization'].split('.')
+    assert len(bits) == 3
+
+    # reset class
+    # FIXME: this is very un-pythonic, find a better caching solution
+    Client.CONFIG = None
