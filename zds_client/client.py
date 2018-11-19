@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 import re
@@ -261,7 +262,7 @@ class Client:
             url,
             method,
             headers,
-            kwargs.get('data', kwargs.get('json', None)),
+            copy.deepcopy(kwargs.get('data', kwargs.get('json', None))),
             response.status_code,
             dict(response.headers),
             response_json,
@@ -302,6 +303,16 @@ class Client:
         operation_id = '{resource}_create'.format(resource=resource)
         url = get_operation_url(self.schema, operation_id, **path_kwargs)
         return self.request(url, operation_id, method='POST', json=data, expected_status=201)
+
+    def update(self, resource: str, data: dict, **path_kwargs) -> Object:
+        operation_id = '{resource}_update'.format(resource=resource)
+        url = get_operation_url(self.schema, operation_id, **path_kwargs)
+        return self.request(url, operation_id, method='PUT', json=data, expected_status=200)
+
+    def partial(self, resource: str, data: dict, **path_kwargs) -> Object:
+        operation_id = '{resource}_partial'.format(resource=resource)
+        url = get_operation_url(self.schema, operation_id, **path_kwargs)
+        return self.request(url, operation_id, method='PATCH', json=data, expected_status=200)
 
     def operation(self, operation_id: str, data: dict, **path_kwargs) -> Union[List[Object], Object]:
         url = get_operation_url(self.schema, operation_id, **path_kwargs)
