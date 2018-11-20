@@ -309,8 +309,8 @@ class Client:
         url = get_operation_url(self.schema, operation_id, **path_kwargs)
         return self.request(url, operation_id, method='PUT', json=data, expected_status=200)
 
-    def partial(self, resource: str, data: dict, **path_kwargs) -> Object:
-        operation_id = '{resource}_partial'.format(resource=resource)
+    def partial_update(self, resource: str, data: dict, **path_kwargs) -> Object:
+        operation_id = '{resource}_partial_update'.format(resource=resource)
         url = get_operation_url(self.schema, operation_id, **path_kwargs)
         return self.request(url, operation_id, method='PATCH', json=data, expected_status=200)
 
