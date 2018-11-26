@@ -12,7 +12,7 @@ specificaties met GEMMA-zaken componenten communiceert.
 Features
 ========
 
-* Ophalen van OAS 2.0 spec en conversie naar OAS 3.0
+* Ophalen van OAS 3.0 spec
 * Aanmaken van resources volgens specificatie
 * Generieke opzet, maar specifiek gebruik in de zaakgericht-werken services
 * Introspectie in het OAS schema: lees op basis van een resource URL uit wat
