@@ -63,8 +63,9 @@ class ClientAuth:
                 'client_identifier': self.client_id,
             }
             encoded = jwt.encode(payload, self.secret, headers=headers, algorithm='HS256')
+            encoded = encoded.decode()  # bytestring to string
 
             self._credentials = {
-                'Authorization': encoded.decode()  # bytestring to string
+                'Authorization': f"Bearer {encoded}"
             }
         return self._credentials
