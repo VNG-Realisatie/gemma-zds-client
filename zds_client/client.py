@@ -75,6 +75,13 @@ class Client:
 
         self._init_auth()
 
+    def __repr__(self):
+        return "<%s: service=%r base_url=%r>" % (
+            self.__class__.__name__,
+            self.service,
+            self.base_url
+        )
+
     def _init_auth(self):
         """
         (Re)-initialize the auth.
