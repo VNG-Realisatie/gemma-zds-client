@@ -9,6 +9,7 @@ import yaml
 
 from .auth import ClientAuth
 from .log import Log
+from .oas import schema_fetcher
 from .schema import get_operation_url
 
 logger = logging.getLogger(__name__)
@@ -243,19 +244,10 @@ class Client:
         assert response.status_code == expected_status, response_json
         return response_json
 
-    def fetch_schema(self):
+    def fetch_schema(self) -> None:
         url = urljoin(self.base_url, 'schema/openapi.yaml')
         logger.info("Fetching schema at '%s'", url)
-        response = requests.get(url, {'v': '3'})
-        logger.info("Schema fetching response code: %s", response.status_code)
-        response.raise_for_status()
-
-        spec = yaml.safe_load(response.content)
-        spec_version = response.headers.get('X-OAS-Version', spec.get('openapi', spec.get('swagger', '')))
-        if not spec_version.startswith('3.0'):
-            raise ValueError("Unsupported spec version: {}".format(spec_version))
-
-        self._schema = spec
+        self._schema = schema_fetcher.fetch(url, {'v': '3'})
 
     def list(self, resource: str, query_params=None, **path_kwargs) -> List[Object]:
         operation_id = '{resource}_list'.format(resource=resource)
