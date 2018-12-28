@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from zds_client import Client
@@ -16,6 +18,14 @@ def test_client_from_detail_url(detail_url, expected_base_path):
     assert client.base_path == expected_base_path
 
 
+def test_client_from_url_thread_safe():
+    client1 = Client.from_url('https://example.com/api/v1/zaken/7C61204C-BFD8-4A66-B826-5DF8CB7F9A60')
+    client2 = Client.from_url('https://example2.com/api/v2/zaken/7C61204C-BFD8-4A66-B826-5DF8CB7F9A60')
+
+    assert client1.base_url == 'https://example.com/api/v1/'
+    assert client2.base_url == 'https://example2.com/api/v2/'
+
+
 def test_client_loading():
     Client.load_config(zrc={
         'scheme': 'http',
@@ -25,10 +35,6 @@ def test_client_loading():
 
     client = Client('zrc')
     assert client.base_url == 'http://localhost:8000/api/v1/'
-
-    # reset class
-    # FIXME: this is very un-pythonic, find a better caching solution
-    Client.CONFIG = None
 
 
 def test_load_with_auth():
@@ -49,6 +55,40 @@ def test_load_with_auth():
     bits = credentials['Authorization'].split('.')
     assert len(bits) == 3
 
-    # reset class
-    # FIXME: this is very un-pythonic, find a better caching solution
-    Client.CONFIG = None
+
+def test_fetch_schema_caching():
+    """
+    Assert that the same schema is not necessarily downloaded multiple times.
+    """
+    Client.load_config(
+        dummy={
+            'scheme': 'https',
+            'host': 'example.com'
+        },
+        dummy2={
+            'scheme': 'https',
+            'host': 'example2.com'
+        }
+    )
+    client = Client('dummy')
+
+    with patch('zds_client.oas.requests.get') as mock_get:
+        mock_get.return_value.content = 'openapi: 3.0.0'
+        mock_get.return_value.headers = {}
+
+        client.fetch_schema()
+
+        mock_get.assert_called_once_with('https://example.com/api/v1/schema/openapi.yaml', {'v': '3'})
+
+        # fetch it again - no extra calls should be made
+        client.fetch_schema()
+
+        mock_get.assert_called_once_with('https://example.com/api/v1/schema/openapi.yaml', {'v': '3'})
+
+        # different URL, even different client instance
+        client2 = Client('dummy2')
+
+        client2.fetch_schema()
+
+        assert mock_get.call_count == 2
+        mock_get.assert_called_with('https://example2.com/api/v1/schema/openapi.yaml', {'v': '3'})
