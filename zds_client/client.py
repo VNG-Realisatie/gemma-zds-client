@@ -256,16 +256,19 @@ class Client:
         url = get_operation_url(self.schema, operation_id, **path_kwargs)
         return self.request(url, operation_id, method='POST', json=data, expected_status=201)
 
-    def update(self, resource: str, data: dict, **path_kwargs) -> Object:
+    def update(self, resource: str, data: dict, url=None, **path_kwargs) -> Object:
         operation_id = '{resource}_update'.format(resource=resource)
-        url = get_operation_url(self.schema, operation_id, **path_kwargs)
+        if url is None:
+            url = get_operation_url(self.schema, operation_id, **path_kwargs)
         return self.request(url, operation_id, method='PUT', json=data, expected_status=200)
 
-    def partial_update(self, resource: str, data: dict, **path_kwargs) -> Object:
+    def partial_update(self, resource: str, data: dict, url=None, **path_kwargs) -> Object:
         operation_id = '{resource}_partial_update'.format(resource=resource)
-        url = get_operation_url(self.schema, operation_id, **path_kwargs)
+        if url is None:
+            url = get_operation_url(self.schema, operation_id, **path_kwargs)
         return self.request(url, operation_id, method='PATCH', json=data, expected_status=200)
 
-    def operation(self, operation_id: str, data: dict, **path_kwargs) -> Union[List[Object], Object]:
-        url = get_operation_url(self.schema, operation_id, **path_kwargs)
+    def operation(self, operation_id: str, data: dict, url=None, **path_kwargs) -> Union[List[Object], Object]:
+        if url is None:
+            url = get_operation_url(self.schema, operation_id, **path_kwargs)
         return self.request(url, operation_id, method='POST', json=data)
