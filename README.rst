@@ -12,17 +12,12 @@ specificaties met GEMMA-zaken componenten communiceert.
 Features
 ========
 
-* Ophalen van OAS 3.0 spec
+* Ophalen van OAS 3.0 spec & caching
 * Aanmaken van resources volgens specificatie
 * Generieke opzet, maar specifiek gebruik in de zaakgericht-werken services
 * Introspectie in het OAS schema: lees op basis van een resource URL uit wat
   er precies hoort achter deze URL te zitten.
 * ZDS autorisatiemodel via JWT out-of-the-box ondersteund.
-
-Geplande features
------------------
-
-* Ophalen OAS 3.0 spec zonder conversie
 
 Installatie
 ===========
@@ -47,7 +42,7 @@ Initialiseren (statische configuratie)
 --------------------------------------
 
 De client moet geinitialiseerd worden met de locatie van de componenten. Dit
-doe je eenmalig:
+kan eenmalig of just-in-time wanneer je de client nodig hebt:
 
 .. code-block:: bash
 
@@ -125,19 +120,19 @@ URL.
 
     from zds_client import Client
 
-    client = Client.from_url('https://api.nl/v1/resource/123', base_dir='/path/to/node_modules')
+    client = Client.from_url('https://api.nl/v1/resource/123')
 
-.. note::
-   Momenteel moet je nog het pad naar `node_modules` opgeven waar de
-   `swagger2openapi` beschikbaar is om on the fly conversie van OAS 2.0 naar
-   OAS 3.0 te doen. Deze moet dus in je eigen project beschikbaar zijn.
+Indien authorisatie hierop nodig is, kan je deze zelf assignen:
 
-   Er zijn plannen om dit uit de client te slopen, en af te dwingen dat de
-   server MOET OAS 3.0 serveren. Dit betekent dat dan OAS 2.0 support
-   gedropped wordt.
+.. code-block:: python
 
-.. note::
-   Deze workflow ondersteund momenteel nog geen AUTH.
+    from zds_client import ClientAuth
+
+    client.auth = ClientAuth(
+        client_id='my-client-id',
+        secret='my-client-secret',
+        **claims
+    )
 
 Resources manipuleren
 ---------------------
