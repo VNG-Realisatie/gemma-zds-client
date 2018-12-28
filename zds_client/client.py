@@ -7,9 +7,10 @@ from urllib.parse import urljoin, urlparse
 import requests
 import yaml
 
-from .auth import ClientAuth
+from .config import ClientConfig
 from .log import Log
 from .oas import schema_fetcher
+from .registry import registry
 from .schema import get_operation_url
 
 logger = logging.getLogger(__name__)
@@ -64,17 +65,24 @@ class Client:
     _schema = None
     _log = Log()
 
-    CONFIG = None
-
     auth = None
 
     def __init__(self, service: str, base_path: str='/api/v1/'):
+        # pull out the config, so that we should be thread safe
+        try:
+            self._config = registry[service]
+        except KeyError:
+            raise RuntimeError(
+                f"Service '{service}' is not known in the client registry. "
+                "Did you load the config first through `Client.load_config(path, **manual)`?"
+            )
+
         self.service = service
         self.base_path = base_path
 
         self._base_url = None
 
-        self._init_auth()
+        self.auth = self._config.auth
 
     def __repr__(self):
         return "<%s: service=%r base_url=%r>" % (
@@ -83,56 +91,55 @@ class Client:
             self.base_url
         )
 
-    def _init_auth(self):
-        """
-        (Re)-initialize the auth.
-        """
-        # possible in the `from_url` branch -> can't set up auth (yet)
-        if self.CONFIG is None:
-            self.auth = None
-            return
-
-        auth = self.CONFIG[self.service].get('auth')
-        if auth is not None:
-            self.auth = ClientAuth(**auth)
-
     @classmethod
     def load_config(cls, path: str=None, **manual):
         """
         Initialize the client configuration.
 
-        The configuration is stored on the client class, so multiple instances
+        The configuration is delegated to the registry, so multiple instances
         of the client share the same configuration.
+
+        The config file should have the following format:
+
+        .. code-block:: yaml
+
+            alias1:
+              scheme: http(s)
+              host: localhost
+              port: 8000
+              auth:
+                client_id: some-client-id
+                secret: very-secret
+                scopes:
+                  - scope1
+                  - scope2
+
+        Multiple service configs are supported, each with their own alias.
+        The `port` and `auth` keys are optional. Port will default to 80 or
+        443 depending on the scheme.
 
         :param path: path to the yaml file holding the config
         :param manual: any manual overrides, as kwargs. Note this completely
           overwrites any existing config in the YAML file if specified.
         """
-        if cls.CONFIG is not None:
-            logger.warning("Re-configuring clients")
-        else:
-            cls.CONFIG = {}
-
         if path is not None:
             logger.info("Loading config from %s", path)
-            with open(path, 'r') as _config:
-                cls.CONFIG.update(yaml.safe_load(_config))
+            with open(path, 'r') as config_file:
+                client_configs = yaml.safe_load(config_file)
+
+            for alias, _config in client_configs.items():
+                config = ClientConfig.from_dict(_config)
+                registry.register(alias, config)
 
         if manual:
             logger.info("Applying manual config: %r", manual)
-            for alias, config in manual.items():
-                cls.CONFIG.setdefault(alias, {})
-                cls.CONFIG[alias].update(config)
+            for alias, _config in manual.items():
+                config = ClientConfig.from_dict(_config)
+                registry.register(alias, config)
 
     @classmethod
     def from_url(cls, detail_url: str) -> 'Client':
         parsed_url = urlparse(detail_url)
-
-        if ':' in parsed_url.netloc:
-            host, port = parsed_url.netloc.split(':')
-        else:
-            host = parsed_url.netloc
-            port = 443 if parsed_url.scheme == 'https' else 80
 
         # we know that API endpoints look like:
         # - /base_path/collection/<uuid> or
@@ -146,15 +153,11 @@ class Client:
             .rsplit('/', 1)
         )[0] + '/'
 
-        client = cls('ad-hoc', base_path)
-        client.CONFIG = {
-            'ad-hoc': {
-                'scheme': parsed_url.scheme,
-                'host': host,
-                'port': port,
-            }
-        }
-        return client
+        # register the config
+        config = ClientConfig.from_url(detail_url)
+        alias = config.base_url
+        registry.register(alias, config)
+        return cls(alias, base_path)
 
     @property
     def log(self):
@@ -166,19 +169,7 @@ class Client:
     def _get_base_url(self) -> str:
         if self._base_url is not None:
             return self._base_url
-
-        if self.CONFIG is None:
-            raise RuntimeError("You need to load the config first through `Client.load_config(path)`")
-        try:
-            config = self.CONFIG[self.service]
-        except KeyError:
-            raise KeyError(f"Service {self.service} unknown, did you specify it in the config?")
-        return "{scheme}://{host}:{port}{path}".format(
-            scheme=config['scheme'],
-            host=config['host'],
-            port=config['port'],
-            path=self.base_path,
-        )
+        return f"{self._config.base_url}{self.base_path}"
 
     def _set_base_url(self, base_url: str) -> None:
         self._base_url = base_url
