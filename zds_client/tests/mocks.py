@@ -47,5 +47,8 @@ def mock_client(responses: dict):
         dotted_path = f'{__name__}.{name}'
         with override_settings(ZDS_CLIENT_CLASS=dotted_path):
             yield
+
+        # clean up
+        delattr(sys.modules[__name__], name)
     finally:
         pass
