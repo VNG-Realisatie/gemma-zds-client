@@ -11,8 +11,8 @@ DEFAULT_PATH_PARAMETERS = {
 TYPE_ARRAY = 'array'
 
 
-def get_operation_url(spec: dict, operation: str, pattern_only=False, **kwargs) -> str:
-    url = spec['servers'][0]['url']
+def get_operation_url(spec: dict, operation: str, pattern_only=False, base_url=None, **kwargs) -> str:
+    url = spec['servers'][0]['url'] if not base_url else base_url
     base_path = urlparse(url).path
 
     for path, methods in spec['paths'].items():
