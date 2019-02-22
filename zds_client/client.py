@@ -268,6 +268,12 @@ class Client:
             url = get_operation_url(self.schema, operation_id, base_url=self.base_url, **path_kwargs)
         return self.request(url, operation_id, method='PATCH', json=data, expected_status=200)
 
+    def delete(self, resource: str, url=None, **path_kwargs) -> Object:
+        operation_id = '{resource}_delete'.format(resource=resource)
+        if url is None:
+            url = get_operation_url(self.schema, operation_id, base_url=self.base_url, **path_kwargs)
+        return self.request(url, operation_id)
+
     def operation(self, operation_id: str, data: dict, url=None, **path_kwargs) -> Union[List[Object], Object]:
         if url is None:
             url = get_operation_url(self.schema, operation_id, base_url=self.base_url, **path_kwargs)
