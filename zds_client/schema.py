@@ -11,7 +11,7 @@ DEFAULT_PATH_PARAMETERS = {
 TYPE_ARRAY = 'array'
 
 
-def get_operation_url(spec: dict, operation: str, pattern_only=False, base_url=None, **kwargs) -> str:
+def get_operation_url(spec: dict, operation: str, pattern_only=False, base_url: str=None, **kwargs) -> str:
     url = spec['servers'][0]['url'] if not base_url else base_url
     base_path = urlparse(url).path
 
@@ -25,6 +25,12 @@ def get_operation_url(spec: dict, operation: str, pattern_only=False, base_url=N
                 format_kwargs.update(**kwargs)
                 if not pattern_only:
                     path = path.format(**format_kwargs)
+
+                # if both base_path ends with a slash and path starts with one,
+                # we need to join them together correctly, so drop one slash
+                if base_path.endswith('/') and path.startswith('/'):
+                    path = path[1:]
+
                 return '{base_path}{path}'.format(base_path=base_path, path=path)
 
     raise ValueError('Operation {operation} not found'.format(operation=operation))
