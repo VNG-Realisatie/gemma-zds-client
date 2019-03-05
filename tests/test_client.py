@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from zds_client import Client
+from zds_client import Client, extract_params, get_operation_url
 
 
 @pytest.mark.parametrize("detail_url,expected_base_path", [
@@ -92,3 +92,31 @@ def test_fetch_schema_caching():
 
         assert mock_get.call_count == 2
         mock_get.assert_called_with('https://example2.com/api/v1/schema/openapi.yaml', {'v': '3'})
+
+
+def test_regression_double_slashes():
+    object_url = 'http://example.com/api/v1/zaken/28dcfc90-2d26-4d4e-8261-a9202ee56185'
+    client = Client.from_url(object_url)
+    # prevents http request to fetch the schema
+    client._schema = {
+        'openapi': '3.0.0',
+        'servers': [{
+            'url': '/api/v1'
+        }],
+        'paths': {
+            '/zaken/{zaak_uuid}/informatieobjecten': {
+                'post': {
+                    'operationId': 'zaakinformatieobject_create',
+                },
+            }
+        }
+    }
+    pattern = get_operation_url(client.schema, 'zaakinformatieobject_create', pattern_only=True)
+    params = extract_params(f"{object_url}/irrelevant", pattern)
+
+    url = get_operation_url(
+        client.schema, 'zaakinformatieobject_create',
+        base_url=client.base_url, **params
+    )
+
+    assert url == '/api/v1/zaken/28dcfc90-2d26-4d4e-8261-a9202ee56185/informatieobjecten'
