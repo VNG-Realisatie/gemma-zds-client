@@ -26,8 +26,14 @@ class MockClient(Client, metaclass=MockClientMeta):
         self._schema = {}
 
     def request(self, path: str, operation: str, method='GET', *args, **kwargs):
-        assert method == 'GET', 'Methods other than GET are currently not supported'
         url = urljoin(self.base_url, path)
+
+        # temprorary solution for testing requests with notifications
+        if operation == 'notificaties':
+            assert method == 'POST', 'For notifications only POST method is supported'
+            return self.responses.get(url, {})
+
+        assert method == 'GET', 'Methods other than GET are currently not supported'
         return self.responses[url]
 
 
