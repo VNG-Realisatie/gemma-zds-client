@@ -272,7 +272,7 @@ class Client:
         operation_id = '{resource}_delete'.format(resource=resource)
         if url is None:
             url = get_operation_url(self.schema, operation_id, base_url=self.base_url, **path_kwargs)
-        return self.request(url, operation_id)
+        return self.request(url, operation_id, method='DELETE', expected_status=204)
 
     def operation(self, operation_id: str, data: dict, url=None, **path_kwargs) -> Union[List[Object], Object]:
         if url is None:
