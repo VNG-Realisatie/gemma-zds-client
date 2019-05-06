@@ -2,6 +2,8 @@
 ZDS-Client - Generieke client voor GEMMA-zaken componenten
 ==========================================================
 
+|build-status|
+
 De ZDS-Client is een (voorlopig) interne client die op basis van OAS 3.0
 specificaties met GEMMA-zaken componenten communiceert.
 
@@ -189,3 +191,8 @@ Met de ``schema`` module kan je introspectie doen op resource URLs:
         method='GET', status_code='200'
     )
     assert output_schema['type'] == 'object'
+
+
+.. |build-status| image:: https://travis-ci.org/VNG-Realisatie/gemma-zds-client.svg?branch=master
+    :alt: Build status
+    :target: https://travis-ci.org/VNG-Realisatie/gemma-zds-client
