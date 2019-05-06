@@ -45,11 +45,11 @@ class ClientConfig:
         """
         Calculate the base URL, without the api root base path.
         """
-        base = f"{self.scheme}://{self.host}"
+        base = "{}://{}".format(self.scheme, self.host)
 
         # if it's the default ports, we don't need to be explicit
         default_port = default_ports[self.scheme]
         if self.port == default_port:
             return base
 
-        return f"{base}:{self.port}"
+        return "{}:{}".format(base, self.port)

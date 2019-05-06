@@ -92,7 +92,7 @@ class Schema:
         for server in self.spec['servers']:
             if url.startswith(server['url']):
                 return server['url']
-        raise ValueError(f"No matching server found for '{url}'")
+        raise ValueError("No matching server found for '{}'".format(url))
 
     def get_relative_path_parts(self, url: str) -> list:
         """
@@ -138,7 +138,7 @@ class Schema:
 
             return path_config
 
-        raise ValueError(f"No operation found for url '{url}'")
+        raise ValueError("No operation found for url '{}'".format(url))
 
     def _lookup_schema(self, schema: dict) -> Union[List, Mapping]:
         """

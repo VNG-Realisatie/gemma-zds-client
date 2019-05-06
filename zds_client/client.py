@@ -73,8 +73,9 @@ class Client:
             self._config = registry[service]
         except KeyError:
             raise RuntimeError(
-                f"Service '{service}' is not known in the client registry. "
+                "Service '{service}' is not known in the client registry. "
                 "Did you load the config first through `Client.load_config(path, **manual)`?"
+                .format(service=service)
             )
 
         self.service = service
@@ -169,7 +170,7 @@ class Client:
     def _get_base_url(self) -> str:
         if self._base_url is not None:
             return self._base_url
-        return f"{self._config.base_url}{self.base_path}"
+        return "{}{}".format(self._config.base_url, self.base_path)
 
     def _set_base_url(self, base_url: str) -> None:
         self._base_url = base_url

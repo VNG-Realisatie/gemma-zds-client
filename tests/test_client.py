@@ -112,7 +112,7 @@ def test_regression_double_slashes():
         }
     }
     pattern = get_operation_url(client.schema, 'zaakinformatieobject_create', pattern_only=True)
-    params = extract_params(f"{object_url}/irrelevant", pattern)
+    params = extract_params("{}/irrelevant".format(object_url), pattern)
 
     url = get_operation_url(
         client.schema, 'zaakinformatieobject_create',

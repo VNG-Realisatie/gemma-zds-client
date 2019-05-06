@@ -87,6 +87,6 @@ class ClientAuth:
             encoded = encoded.decode()  # bytestring to string
 
             self._credentials = {
-                'Authorization': f"Bearer {encoded}"
+                'Authorization': "Bearer {encoded}".format(encoded=encoded)
             }
         return self._credentials
