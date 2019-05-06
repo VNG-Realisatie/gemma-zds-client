@@ -4,6 +4,15 @@ import warnings
 import jwt
 
 
+def _warn_ac():
+    warnings.warn(
+        "Starting with 1.0, specifying claims will no longer be "
+        "supported. Authorizations should be configured on the AC "
+        "instead",
+        DeprecationWarning
+    )
+
+
 class ClientAuth:
     """
     Auth for the ZDS client, using JWT.
@@ -32,12 +41,15 @@ class ClientAuth:
 
         self.secret = secret
 
+        if claims:
+            _warn_ac()
         self.claims = claims
 
     def set_claims(self, **kwargs) -> None:
         """
         Set the claims for the client.
         """
+        _warn_ac()
         claims = self.claims.copy()
         claims.update(**kwargs)
 
@@ -57,12 +69,21 @@ class ClientAuth:
                 'iss': self.client_id,
                 'iat': int(time.time()),
                 # custom claims
-                'zds': self.claims,
+                'client_id': self.client_id,
+
+
             }
+            if self.claims:
+                payload['zds'] = self.claims
+
+            # TODO: drop custom header in 1.0
             headers = {
                 'client_identifier': self.client_id,
             }
-            encoded = jwt.encode(payload, self.secret, headers=headers, algorithm='HS256')
+            encoded = jwt.encode(
+                payload, self.secret,
+                headers=headers, algorithm='HS256'
+            )
             encoded = encoded.decode()  # bytestring to string
 
             self._credentials = {
