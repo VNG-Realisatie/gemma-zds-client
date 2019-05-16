@@ -32,7 +32,7 @@ class ClientAuth:
     >>> requests.get(url, **auth.credentials())
     """
 
-    def __init__(self, client_id: str, secret: str, **claims):
+    def __init__(self, client_id: str, secret: str, user_id: str, user_representation=None, **claims):
         self.client_id = client_id
 
         if secret is None:
@@ -44,6 +44,10 @@ class ClientAuth:
         if claims:
             _warn_ac()
         self.claims = claims
+
+        self.user_id = user_id
+
+        self.user_representation = user_representation or ''
 
     def set_claims(self, **kwargs) -> None:
         """
@@ -70,8 +74,8 @@ class ClientAuth:
                 'iat': int(time.time()),
                 # custom claims
                 'client_id': self.client_id,
-
-
+                'user_id': self.user_id,
+                'user_representation': self.user_representation
             }
             if self.claims:
                 payload['zds'] = self.claims
