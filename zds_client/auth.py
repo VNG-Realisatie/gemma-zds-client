@@ -1,5 +1,6 @@
 import time
 import warnings
+from typing import Union
 
 import jwt
 
@@ -22,9 +23,9 @@ class ClientAuth:
     >>> auth = ClientAuth(
             client_id='zrc',
             secret='my-secret',
-            scopes=['zds.scopes.zaken.aanmaken']
+            user_id='my-id',
+            user_representation='my-name'
         )
-    >>> auth.set_claims(zaaktypes=['http://ztc.nl/api/v1/zaaktype/1234'])
     >>> auth.credentials()
     {
         'Authorization': '<base64>.<base64>.<base64>'
@@ -32,7 +33,9 @@ class ClientAuth:
     >>> requests.get(url, **auth.credentials())
     """
 
-    def __init__(self, client_id: str, secret: str, **claims):
+    def __init__(self, client_id: str, secret: str,
+                 user_id: Union[str, None] = None,
+                 user_representation: Union[str, None] = None, **claims):
         self.client_id = client_id
 
         if secret is None:
@@ -44,6 +47,9 @@ class ClientAuth:
         if claims:
             _warn_ac()
         self.claims = claims
+
+        self.user_id = user_id or ''
+        self.user_representation = user_representation or ''
 
     def set_claims(self, **kwargs) -> None:
         """
@@ -70,8 +76,8 @@ class ClientAuth:
                 'iat': int(time.time()),
                 # custom claims
                 'client_id': self.client_id,
-
-
+                'user_id': self.user_id,
+                'user_representation': self.user_representation
             }
             if self.claims:
                 payload['zds'] = self.claims
