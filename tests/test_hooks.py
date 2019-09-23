@@ -15,7 +15,7 @@ class HookClient(Client):
     def pre_request(self, method, url, *args, **kwargs):
         self.pre = (method, url)
 
-    def post_response(self, response_data):
+    def post_response(self, pre_id, response_data):
         self.post = response_data
 
 

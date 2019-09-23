@@ -1,7 +1,7 @@
 import copy
 import logging
 import re
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -183,6 +183,17 @@ class Client:
             self.fetch_schema()
         return self._schema
 
+    def pre_request(self, method: str, url: str, **kwargs) -> Any:
+        """
+        Perform any pre-request processing required.
+
+        The kwargs are literally passed to :meth:`requests.request` and may
+        be mutated in place.
+
+        The return value is passed as first argument to :meth:`post_response`.
+        """
+        pass
+
     def request(self, path: str, operation: str, method='GET', expected_status=200,
                 **kwargs) -> Union[List[Object], Object]:
         """
@@ -207,12 +218,16 @@ class Client:
 
         kwargs['headers'] = headers
 
+        pre_id = self.pre_request(method, url, **kwargs)
+
         response = requests.request(method, url, **kwargs)
 
         try:
             response_json = response.json()
         except Exception:
             response_json = None
+
+        self.post_response(pre_id, response_json)
 
         self._log.add(
             self.service,
@@ -235,6 +250,9 @@ class Client:
 
         assert response.status_code == expected_status, response_json
         return response_json
+
+    def post_response(self, pre_id: Any, response_data: Optional[Union[dict, list]] = None) -> None:
+        pass
 
     def fetch_schema(self) -> None:
         url = urljoin(self.base_url, 'schema/openapi.yaml')
