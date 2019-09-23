@@ -192,7 +192,31 @@ Met de ``schema`` module kan je introspectie doen op resource URLs:
     )
     assert output_schema['type'] == 'object'
 
+Usage with NLX
+--------------
+
+When you're using NLX outways, the URLs of resources change because of this.
+Services expoxed via NLX inways don't understand local outway URLs, so these
+need to get rewritten.
+
+In Django projects, you can make use of `nlx-url-rewriter`_ to define rewrite
+targets before the requests are sent and right after responses are received.
+
+The rewriter is implemented in the ``zds_client.nlx.NLXClient`` class, which
+you can use instead of ``zds_client.Client``.
+
+Install using:
+
+.. code-block:: bash
+
+    pip install gemma-zds-client[nlx]
+
+This will pull in the extra dependencies. Make sure to follow the `nlx-url-rewriter`_
+setup instructions.
+
 
 .. |build-status| image:: https://travis-ci.org/VNG-Realisatie/gemma-zds-client.svg?branch=master
     :alt: Build status
     :target: https://travis-ci.org/VNG-Realisatie/gemma-zds-client
+
+.. _nlx-url-rewriter: https://pypi.org/project/nlx-url-rewriter/
