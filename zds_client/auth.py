@@ -10,7 +10,7 @@ def _warn_ac():
         "Starting with 1.0, specifying claims will no longer be "
         "supported. Authorizations should be configured on the AC "
         "instead",
-        DeprecationWarning
+        DeprecationWarning,
     )
 
 
@@ -33,14 +33,21 @@ class ClientAuth:
     >>> requests.get(url, **auth.credentials())
     """
 
-    def __init__(self, client_id: str, secret: str,
-                 user_id: Union[str, None] = None,
-                 user_representation: Union[str, None] = None, **claims):
+    def __init__(
+        self,
+        client_id: str,
+        secret: str,
+        user_id: Union[str, None] = None,
+        user_representation: Union[str, None] = None,
+        **claims
+    ):
         self.client_id = client_id
 
         if secret is None:
-            warnings.warn("`None` secret received -  casting to empty string", UserWarning)
-            secret = ''
+            warnings.warn(
+                "`None` secret received -  casting to empty string", UserWarning
+            )
+            secret = ""
 
         self.secret = secret
 
@@ -48,8 +55,8 @@ class ClientAuth:
             _warn_ac()
         self.claims = claims
 
-        self.user_id = user_id or ''
-        self.user_representation = user_representation or ''
+        self.user_id = user_id or ""
+        self.user_representation = user_representation or ""
 
     def set_claims(self, **kwargs) -> None:
         """
@@ -60,7 +67,7 @@ class ClientAuth:
         claims.update(**kwargs)
 
         # invalidate cache if needed (claims have changed)
-        if hasattr(self, '_credentials') and claims != self.claims:
+        if hasattr(self, "_credentials") and claims != self.claims:
             del self._credentials
 
         self.claims = claims
@@ -69,30 +76,27 @@ class ClientAuth:
         """
         Return the HTTP Header containing the credentials.
         """
-        if not hasattr(self, '_credentials'):
+        if not hasattr(self, "_credentials"):
             payload = {
                 # standard claims
-                'iss': self.client_id,
-                'iat': int(time.time()),
+                "iss": self.client_id,
+                "iat": int(time.time()),
                 # custom claims
-                'client_id': self.client_id,
-                'user_id': self.user_id,
-                'user_representation': self.user_representation
+                "client_id": self.client_id,
+                "user_id": self.user_id,
+                "user_representation": self.user_representation,
             }
             if self.claims:
-                payload['zds'] = self.claims
+                payload["zds"] = self.claims
 
             # TODO: drop custom header in 1.0
-            headers = {
-                'client_identifier': self.client_id,
-            }
+            headers = {"client_identifier": self.client_id}
             encoded = jwt.encode(
-                payload, self.secret,
-                headers=headers, algorithm='HS256'
+                payload, self.secret, headers=headers, algorithm="HS256"
             )
             encoded = encoded.decode()  # bytestring to string
 
             self._credentials = {
-                'Authorization': "Bearer {encoded}".format(encoded=encoded)
+                "Authorization": "Bearer {encoded}".format(encoded=encoded)
             }
         return self._credentials

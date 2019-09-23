@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 Object = Dict[str, Any]
 
 UUID_PATTERN = re.compile(
-    r'[0-9a-f]{8}\-[0-9a-f]{4}\-4[0-9a-f]{3}\-[89ab][0-9a-f]{3}\-[0-9a-f]{12}',
-    flags=re.I
+    r"[0-9a-f]{8}\-[0-9a-f]{4}\-4[0-9a-f]{3}\-[89ab][0-9a-f]{3}\-[0-9a-f]{12}",
+    flags=re.I,
 )
 
 
@@ -31,27 +31,28 @@ def get_headers(spec: dict, operation: str) -> dict:
 
     def filter_header_params(params: list):
         return [
-            param for param in params
-            if param['in'] == 'header' and param['required']
+            param for param in params if param["in"] == "header" and param["required"]
         ]
 
-    for path, methods in spec['paths'].items():
-        path_parameters = filter_header_params(methods.get('parameters', []))
+    for path, methods in spec["paths"].items():
+        path_parameters = filter_header_params(methods.get("parameters", []))
         for name, method in methods.items():
-            if name == 'parameters':
+            if name == "parameters":
                 continue
 
-            if method['operationId'] != operation:
+            if method["operationId"] != operation:
                 continue
 
-            method_parameters = filter_header_params(method.get('parameters', []))
+            method_parameters = filter_header_params(method.get("parameters", []))
 
             for param in path_parameters + method_parameters:
-                enum = param['schema'].get('enum', [])
-                default = param['schema'].get('default')
+                enum = param["schema"].get("enum", [])
+                default = param["schema"].get("default")
 
-                assert len(enum) == 1 or default, "Can't choose an appropriate default header value"
-                headers[param['name']] = default or enum[0]
+                assert (
+                    len(enum) == 1 or default
+                ), "Can't choose an appropriate default header value"
+                headers[param["name"]] = default or enum[0]
 
     return headers
 
@@ -67,15 +68,16 @@ class Client:
 
     auth = None
 
-    def __init__(self, service: str, base_path: str='/api/v1/'):
+    def __init__(self, service: str, base_path: str = "/api/v1/"):
         # pull out the config, so that we should be thread safe
         try:
             self._config = registry[service]
         except KeyError:
             raise RuntimeError(
                 "Service '{service}' is not known in the client registry. "
-                "Did you load the config first through `Client.load_config(path, **manual)`?"
-                .format(service=service)
+                "Did you load the config first through `Client.load_config(path, **manual)`?".format(
+                    service=service
+                )
             )
 
         self.service = service
@@ -89,11 +91,11 @@ class Client:
         return "<%s: service=%r base_url=%r>" % (
             self.__class__.__name__,
             self.service,
-            self.base_url
+            self.base_url,
         )
 
     @classmethod
-    def load_config(cls, path: str=None, **manual):
+    def load_config(cls, path: str = None, **manual):
         """
         Initialize the client configuration.
 
@@ -125,7 +127,7 @@ class Client:
         """
         if path is not None:
             logger.info("Loading config from %s", path)
-            with open(path, 'r') as config_file:
+            with open(path, "r") as config_file:
                 client_configs = yaml.safe_load(config_file)
 
             for alias, _config in client_configs.items():
@@ -139,7 +141,7 @@ class Client:
                 registry.register(alias, config)
 
     @classmethod
-    def from_url(cls, detail_url: str) -> 'Client':
+    def from_url(cls, detail_url: str) -> "Client":
         parsed_url = urlparse(detail_url)
 
         # we know that API endpoints look like:
@@ -148,11 +150,7 @@ class Client:
         # - /base_path/collection/<uuid>/subcollection/<uuid>
         # So, splitting on UUIDs gives us the base_path + collection
         bits = re.split(UUID_PATTERN, parsed_url.path)
-        base_path = (
-            bits[0]
-            .rstrip('/')
-            .rsplit('/', 1)
-        )[0] + '/'
+        base_path = (bits[0].rstrip("/").rsplit("/", 1))[0] + "/"
 
         # register the config
         config = ClientConfig.from_url(detail_url)
@@ -165,7 +163,9 @@ class Client:
         """
         Local log entries.
         """
-        return (entry for entry in self._log.entries() if entry['service'] == self.service)
+        return (
+            entry for entry in self._log.entries() if entry["service"] == self.service
+        )
 
     def _get_base_url(self) -> str:
         if self._base_url is not None:
@@ -194,8 +194,9 @@ class Client:
         """
         pass
 
-    def request(self, path: str, operation: str, method='GET', expected_status=200,
-                **kwargs) -> Union[List[Object], Object]:
+    def request(
+        self, path: str, operation: str, method="GET", expected_status=200, **kwargs
+    ) -> Union[List[Object], Object]:
         """
         Make the HTTP request using requests.
 
@@ -208,15 +209,15 @@ class Client:
         """
         url = urljoin(self.base_url, path)
 
-        headers = kwargs.pop('headers', {})
-        headers.setdefault('Accept', 'application/json')
-        headers.setdefault('Content-Type', 'application/json')
+        headers = kwargs.pop("headers", {})
+        headers.setdefault("Accept", "application/json")
+        headers.setdefault("Content-Type", "application/json")
         headers.update(get_headers(self.schema, operation))
 
         if self.auth:
             headers.update(self.auth.credentials())
 
-        kwargs['headers'] = headers
+        kwargs["headers"] = headers
 
         pre_id = self.pre_request(method, url, **kwargs)
 
@@ -234,11 +235,11 @@ class Client:
             url,
             method,
             headers,
-            copy.deepcopy(kwargs.get('data', kwargs.get('json', None))),
+            copy.deepcopy(kwargs.get("data", kwargs.get("json", None))),
             response.status_code,
             dict(response.headers),
             response_json,
-            params=kwargs.get('params'),
+            params=kwargs.get("params"),
         )
 
         try:
@@ -251,49 +252,75 @@ class Client:
         assert response.status_code == expected_status, response_json
         return response_json
 
-    def post_response(self, pre_id: Any, response_data: Optional[Union[dict, list]] = None) -> None:
+    def post_response(
+        self, pre_id: Any, response_data: Optional[Union[dict, list]] = None
+    ) -> None:
         pass
 
     def fetch_schema(self) -> None:
-        url = urljoin(self.base_url, 'schema/openapi.yaml')
+        url = urljoin(self.base_url, "schema/openapi.yaml")
         logger.info("Fetching schema at '%s'", url)
-        self._schema = schema_fetcher.fetch(url, {'v': '3'})
+        self._schema = schema_fetcher.fetch(url, {"v": "3"})
 
     def list(self, resource: str, query_params=None, **path_kwargs) -> List[Object]:
-        operation_id = '{resource}_list'.format(resource=resource)
-        url = get_operation_url(self.schema, operation_id, base_url=self.base_url, **path_kwargs)
+        operation_id = "{resource}_list".format(resource=resource)
+        url = get_operation_url(
+            self.schema, operation_id, base_url=self.base_url, **path_kwargs
+        )
         return self.request(url, operation_id, params=query_params)
 
     def retrieve(self, resource: str, url=None, **path_kwargs) -> Object:
-        operation_id = '{resource}_read'.format(resource=resource)
+        operation_id = "{resource}_read".format(resource=resource)
         if url is None:
-            url = get_operation_url(self.schema, operation_id, base_url=self.base_url, **path_kwargs)
+            url = get_operation_url(
+                self.schema, operation_id, base_url=self.base_url, **path_kwargs
+            )
         return self.request(url, operation_id)
 
     def create(self, resource: str, data: dict, **path_kwargs) -> Object:
-        operation_id = '{resource}_create'.format(resource=resource)
-        url = get_operation_url(self.schema, operation_id, base_url=self.base_url, **path_kwargs)
-        return self.request(url, operation_id, method='POST', json=data, expected_status=201)
+        operation_id = "{resource}_create".format(resource=resource)
+        url = get_operation_url(
+            self.schema, operation_id, base_url=self.base_url, **path_kwargs
+        )
+        return self.request(
+            url, operation_id, method="POST", json=data, expected_status=201
+        )
 
     def update(self, resource: str, data: dict, url=None, **path_kwargs) -> Object:
-        operation_id = '{resource}_update'.format(resource=resource)
+        operation_id = "{resource}_update".format(resource=resource)
         if url is None:
-            url = get_operation_url(self.schema, operation_id, base_url=self.base_url, **path_kwargs)
-        return self.request(url, operation_id, method='PUT', json=data, expected_status=200)
+            url = get_operation_url(
+                self.schema, operation_id, base_url=self.base_url, **path_kwargs
+            )
+        return self.request(
+            url, operation_id, method="PUT", json=data, expected_status=200
+        )
 
-    def partial_update(self, resource: str, data: dict, url=None, **path_kwargs) -> Object:
-        operation_id = '{resource}_partial_update'.format(resource=resource)
+    def partial_update(
+        self, resource: str, data: dict, url=None, **path_kwargs
+    ) -> Object:
+        operation_id = "{resource}_partial_update".format(resource=resource)
         if url is None:
-            url = get_operation_url(self.schema, operation_id, base_url=self.base_url, **path_kwargs)
-        return self.request(url, operation_id, method='PATCH', json=data, expected_status=200)
+            url = get_operation_url(
+                self.schema, operation_id, base_url=self.base_url, **path_kwargs
+            )
+        return self.request(
+            url, operation_id, method="PATCH", json=data, expected_status=200
+        )
 
     def delete(self, resource: str, url=None, **path_kwargs) -> Object:
-        operation_id = '{resource}_delete'.format(resource=resource)
+        operation_id = "{resource}_delete".format(resource=resource)
         if url is None:
-            url = get_operation_url(self.schema, operation_id, base_url=self.base_url, **path_kwargs)
-        return self.request(url, operation_id, method='DELETE', expected_status=204)
+            url = get_operation_url(
+                self.schema, operation_id, base_url=self.base_url, **path_kwargs
+            )
+        return self.request(url, operation_id, method="DELETE", expected_status=204)
 
-    def operation(self, operation_id: str, data: dict, url=None, **path_kwargs) -> Union[List[Object], Object]:
+    def operation(
+        self, operation_id: str, data: dict, url=None, **path_kwargs
+    ) -> Union[List[Object], Object]:
         if url is None:
-            url = get_operation_url(self.schema, operation_id, base_url=self.base_url, **path_kwargs)
-        return self.request(url, operation_id, method='POST', json=data)
+            url = get_operation_url(
+                self.schema, operation_id, base_url=self.base_url, **path_kwargs
+            )
+        return self.request(url, operation_id, method="POST", json=data)

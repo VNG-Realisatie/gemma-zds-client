@@ -4,7 +4,7 @@ Manage OpenAPI Specification 3.0.x schemas.
 import requests
 import yaml
 
-__all__ = ['schema_fetcher']
+__all__ = ["schema_fetcher"]
 
 
 class SchemaFetcher:
@@ -38,10 +38,9 @@ class SchemaFetcher:
 
         spec = yaml.safe_load(response.content)
         spec_version = response.headers.get(
-            'X-OAS-Version',
-            spec.get('openapi', spec.get('swagger', ''))
+            "X-OAS-Version", spec.get("openapi", spec.get("swagger", ""))
         )
-        if not spec_version.startswith('3.0'):
+        if not spec_version.startswith("3.0"):
             raise ValueError("Unsupported spec version: {}".format(spec_version))
 
         self.cache[url] = spec

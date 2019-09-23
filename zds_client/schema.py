@@ -4,23 +4,23 @@ from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_PATH_PARAMETERS = {
-    'version': '1',
-}
+DEFAULT_PATH_PARAMETERS = {"version": "1"}
 
-TYPE_ARRAY = 'array'
+TYPE_ARRAY = "array"
 
 
-def get_operation_url(spec: dict, operation: str, pattern_only=False, base_url: str=None, **kwargs) -> str:
-    url = spec['servers'][0]['url'] if not base_url else base_url
+def get_operation_url(
+    spec: dict, operation: str, pattern_only=False, base_url: str = None, **kwargs
+) -> str:
+    url = spec["servers"][0]["url"] if not base_url else base_url
     base_path = urlparse(url).path
 
-    for path, methods in spec['paths'].items():
+    for path, methods in spec["paths"].items():
         for name, method in methods.items():
-            if name == 'parameters':
+            if name == "parameters":
                 continue
 
-            if method['operationId'] == operation:
+            if method["operationId"] == operation:
                 format_kwargs = DEFAULT_PATH_PARAMETERS.copy()
                 format_kwargs.update(**kwargs)
                 if not pattern_only:
@@ -28,12 +28,12 @@ def get_operation_url(spec: dict, operation: str, pattern_only=False, base_url: 
 
                 # if both base_path ends with a slash and path starts with one,
                 # we need to join them together correctly, so drop one slash
-                if base_path.endswith('/') and path.startswith('/'):
+                if base_path.endswith("/") and path.startswith("/"):
                     path = path[1:]
 
-                return '{base_path}{path}'.format(base_path=base_path, path=path)
+                return "{base_path}{path}".format(base_path=base_path, path=path)
 
-    raise ValueError('Operation {operation} not found'.format(operation=operation))
+    raise ValueError("Operation {operation} not found".format(operation=operation))
 
 
 def path_to_bits(path: str, transform=reversed) -> list:
@@ -43,7 +43,7 @@ def path_to_bits(path: str, transform=reversed) -> list:
     By default the parts are returned in reverse order to match two paths
     by their ends and discard any mismatching prefixes.
     """
-    return [bit for bit in transform(path.split('/')) if bit]
+    return [bit for bit in transform(path.split("/")) if bit]
 
 
 def extract_params(url: str, pattern: str) -> dict:
@@ -62,10 +62,11 @@ def extract_params(url: str, pattern: str) -> dict:
 
     # pattern should be shortest, since actual urls may be hosted on a subpath
     pattern_bits = path_to_bits(path_pattern)
-    url_bits = path_to_bits(path_url)[:len(pattern_bits)]
+    url_bits = path_to_bits(path_url)[: len(pattern_bits)]
 
     return {
-        pattern[1:-1]: value for pattern, value in zip(pattern_bits, url_bits)
+        pattern[1:-1]: value
+        for pattern, value in zip(pattern_bits, url_bits)
         if pattern != value
     }
 
@@ -79,7 +80,7 @@ class Schema:
     Read configuration from the OpenAPI schema.
     """
 
-    def __init__(self, spec: dict, content_type='application/json'):
+    def __init__(self, spec: dict, content_type="application/json"):
         self.spec = spec
         self.content_type = content_type
 
@@ -89,9 +90,9 @@ class Schema:
 
         :raises ValueError: if no server matched.
         """
-        for server in self.spec['servers']:
-            if url.startswith(server['url']):
-                return server['url']
+        for server in self.spec["servers"]:
+            if url.startswith(server["url"]):
+                return server["url"]
         raise ValueError("No matching server found for '{}'".format(url))
 
     def get_relative_path_parts(self, url: str) -> list:
@@ -102,7 +103,7 @@ class Schema:
         paths from self.spec['paths'].
         """
         root = self.get_root(url)
-        relative_path = url[len(root):]
+        relative_path = url[len(root) :]
         return path_to_bits(relative_path, transform=noop)
 
     def _get_path_config(self, url: str) -> dict:
@@ -114,17 +115,21 @@ class Schema:
         """
         rel_path_parts = self.get_relative_path_parts(url)
 
-        for path_template, path_config in self.spec['paths'].items():
+        for path_template, path_config in self.spec["paths"].items():
             path_template_bits = path_to_bits(path_template, transform=noop)
 
             if len(path_template_bits) != len(rel_path_parts):
                 continue
 
             mismatch = False
-            for (path_template_bit, rel_path_bit) in zip(path_template_bits, rel_path_parts):
+            for (path_template_bit, rel_path_bit) in zip(
+                path_template_bits, rel_path_parts
+            ):
                 # a template var looks like {foo}, so we cannot make any
                 # assumptions about those, so skip...
-                if path_template_bit.startswith('{') and path_template_bit.endswith('}'):
+                if path_template_bit.startswith("{") and path_template_bit.endswith(
+                    "}"
+                ):
                     continue
 
                 # mismatch, skip...
@@ -144,18 +149,18 @@ class Schema:
         """
         Perform lookup of schema reference to the actual schema.
         """
-        is_collection = schema.get('type') == TYPE_ARRAY
+        is_collection = schema.get("type") == TYPE_ARRAY
 
         if is_collection:
-            ref = schema['items']['$ref']
+            ref = schema["items"]["$ref"]
         else:
-            ref = schema.get('$ref')
+            ref = schema.get("$ref")
 
         if ref is None:
             raise NotImplementedError("Currently only schema refs are supported")
 
         _schema = self.spec.copy()
-        for key in ref.split('/')[1:]:
+        for key in ref.split("/")[1:]:
             _schema = _schema[key]
         return _schema if not is_collection else [_schema]
 
@@ -171,8 +176,8 @@ class Schema:
         method = method.lower()
         path_config = self._get_path_config(url)
 
-        request_body = path_config[method]['requestBody']
-        schema = request_body['content'][self.content_type]['schema']
+        request_body = path_config[method]["requestBody"]
+        schema = request_body["content"][self.content_type]["schema"]
 
         return self._lookup_schema(schema)
 
@@ -192,12 +197,14 @@ class Schema:
             return []
 
         # parameters key MAY be present
-        method_parameters = path_config[method].get('parameters', [])
+        method_parameters = path_config[method].get("parameters", [])
 
         # merge endpoint parameters with method parameters
-        return path_config['parameters'] + method_parameters
+        return path_config["parameters"] + method_parameters
 
-    def get_response_resource_schema(self, url: str, method: str, status_code: str) -> Union[List, Mapping]:
+    def get_response_resource_schema(
+        self, url: str, method: str, status_code: str
+    ) -> Union[List, Mapping]:
         """
         Retrieve the schema of the request body resource.
 
@@ -209,7 +216,7 @@ class Schema:
         method = method.lower()
         path_config = self._get_path_config(url)
 
-        responses = path_config[method]['responses'][status_code]
-        schema = responses['content'][self.content_type]['schema']
+        responses = path_config[method]["responses"][status_code]
+        schema = responses["content"][self.content_type]["schema"]
 
         return self._lookup_schema(schema)

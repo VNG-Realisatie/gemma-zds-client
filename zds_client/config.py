@@ -2,14 +2,17 @@ from urllib.parse import urlparse
 
 from .auth import ClientAuth
 
-default_ports = {
-    'https': 443,
-    'http': 80,
-}
+default_ports = {"https": 443, "http": 80}
 
 
 class ClientConfig:
-    def __init__(self, scheme: str='https', host: str='localhost', port: int=None, auth: ClientAuth=None):
+    def __init__(
+        self,
+        scheme: str = "https",
+        host: str = "localhost",
+        port: int = None,
+        auth: ClientAuth = None,
+    ):
         self.scheme = scheme
         self.host = host
         self.port = port if port else default_ports[scheme]
@@ -19,26 +22,22 @@ class ClientConfig:
         return "<%s: %s>" % (self.__class__.__name__, self.base_url)
 
     @classmethod
-    def from_dict(cls, _config: dict) -> 'ClientConfig':
-        _auth = _config.pop('auth', None)
+    def from_dict(cls, _config: dict) -> "ClientConfig":
+        _auth = _config.pop("auth", None)
         auth = None if not _auth else ClientAuth(**_auth)
         return cls(**_config, auth=auth)
 
     @classmethod
-    def from_url(cls, detail_url: str) -> 'ClientConfig':
+    def from_url(cls, detail_url: str) -> "ClientConfig":
         parsed_url = urlparse(detail_url)
 
-        if ':' in parsed_url.netloc:
-            host, port = parsed_url.netloc.split(':')
+        if ":" in parsed_url.netloc:
+            host, port = parsed_url.netloc.split(":")
         else:
             host, port = parsed_url.netloc, None
 
         # register the config
-        return cls.from_dict({
-            'scheme': parsed_url.scheme,
-            'host': host,
-            'port': port,
-        })
+        return cls.from_dict({"scheme": parsed_url.scheme, "host": host, "port": port})
 
     @property
     def base_url(self) -> str:
