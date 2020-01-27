@@ -195,7 +195,13 @@ class Client:
         pass
 
     def request(
-        self, path: str, operation: str, method="GET", expected_status=200, **kwargs
+        self,
+        path: str,
+        operation: str,
+        method="GET",
+        expected_status=200,
+        request_kwargs: Optional[dict] = None,
+        **kwargs
     ) -> Union[List[Object], Object]:
         """
         Make the HTTP request using requests.
@@ -208,6 +214,9 @@ class Client:
         :raises: :class:``ClientError` for HTTP 4xx status codes
         """
         url = urljoin(self.base_url, path)
+
+        if request_kwargs:
+            kwargs.update(request_kwargs)
 
         headers = kwargs.pop("headers", {})
         headers.setdefault("Accept", "application/json")
@@ -262,42 +271,84 @@ class Client:
         logger.info("Fetching schema at '%s'", url)
         self._schema = schema_fetcher.fetch(url, {"v": "3"})
 
-    def list(self, resource: str, query_params=None, **path_kwargs) -> List[Object]:
+    def list(
+        self,
+        resource: str,
+        query_params=None,
+        request_kwargs: Optional[dict] = None,
+        **path_kwargs
+    ) -> List[Object]:
         operation_id = "{resource}_list".format(resource=resource)
         url = get_operation_url(
             self.schema, operation_id, base_url=self.base_url, **path_kwargs
         )
-        return self.request(url, operation_id, params=query_params)
+        return self.request(
+            url, operation_id, params=query_params, request_kwargs=request_kwargs
+        )
 
-    def retrieve(self, resource: str, url=None, **path_kwargs) -> Object:
+    def retrieve(
+        self,
+        resource: str,
+        url=None,
+        request_kwargs: Optional[dict] = None,
+        **path_kwargs
+    ) -> Object:
         operation_id = "{resource}_read".format(resource=resource)
         if url is None:
             url = get_operation_url(
                 self.schema, operation_id, base_url=self.base_url, **path_kwargs
             )
-        return self.request(url, operation_id)
+        return self.request(url, operation_id, request_kwargs=request_kwargs)
 
-    def create(self, resource: str, data: dict, **path_kwargs) -> Object:
+    def create(
+        self,
+        resource: str,
+        data: dict,
+        request_kwargs: Optional[dict] = None,
+        **path_kwargs
+    ) -> Object:
         operation_id = "{resource}_create".format(resource=resource)
         url = get_operation_url(
             self.schema, operation_id, base_url=self.base_url, **path_kwargs
         )
         return self.request(
-            url, operation_id, method="POST", json=data, expected_status=201
+            url,
+            operation_id,
+            method="POST",
+            json=data,
+            expected_status=201,
+            request_kwargs=request_kwargs,
         )
 
-    def update(self, resource: str, data: dict, url=None, **path_kwargs) -> Object:
+    def update(
+        self,
+        resource: str,
+        data: dict,
+        url=None,
+        request_kwargs: Optional[dict] = None,
+        **path_kwargs
+    ) -> Object:
         operation_id = "{resource}_update".format(resource=resource)
         if url is None:
             url = get_operation_url(
                 self.schema, operation_id, base_url=self.base_url, **path_kwargs
             )
         return self.request(
-            url, operation_id, method="PUT", json=data, expected_status=200
+            url,
+            operation_id,
+            method="PUT",
+            json=data,
+            expected_status=200,
+            request_kwargs=request_kwargs,
         )
 
     def partial_update(
-        self, resource: str, data: dict, url=None, **path_kwargs
+        self,
+        resource: str,
+        data: dict,
+        url=None,
+        request_kwargs: Optional[dict] = None,
+        **path_kwargs
     ) -> Object:
         operation_id = "{resource}_partial_update".format(resource=resource)
         if url is None:
@@ -305,22 +356,46 @@ class Client:
                 self.schema, operation_id, base_url=self.base_url, **path_kwargs
             )
         return self.request(
-            url, operation_id, method="PATCH", json=data, expected_status=200
+            url,
+            operation_id,
+            method="PATCH",
+            json=data,
+            expected_status=200,
+            request_kwargs=request_kwargs,
         )
 
-    def delete(self, resource: str, url=None, **path_kwargs) -> Object:
+    def delete(
+        self,
+        resource: str,
+        url=None,
+        request_kwargs: Optional[dict] = None,
+        **path_kwargs
+    ) -> Object:
         operation_id = "{resource}_delete".format(resource=resource)
         if url is None:
             url = get_operation_url(
                 self.schema, operation_id, base_url=self.base_url, **path_kwargs
             )
-        return self.request(url, operation_id, method="DELETE", expected_status=204)
+        return self.request(
+            url,
+            operation_id,
+            method="DELETE",
+            expected_status=204,
+            request_kwargs=request_kwargs,
+        )
 
     def operation(
-        self, operation_id: str, data: dict, url=None, **path_kwargs
+        self,
+        operation_id: str,
+        data: dict,
+        url=None,
+        request_kwargs: Optional[dict] = None,
+        **path_kwargs
     ) -> Union[List[Object], Object]:
         if url is None:
             url = get_operation_url(
                 self.schema, operation_id, base_url=self.base_url, **path_kwargs
             )
-        return self.request(url, operation_id, method="POST", json=data)
+        return self.request(
+            url, operation_id, method="POST", json=data, request_kwargs=request_kwargs
+        )
