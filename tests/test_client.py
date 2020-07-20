@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from zds_client import Client, extract_params, get_operation_url
+from zds_client.client import get_headers
 
 
 @pytest.mark.parametrize(
@@ -106,6 +107,45 @@ def test_fetch_schema_caching():
         mock_get.assert_called_with(
             "https://example2.com/api/v1/schema/openapi.yaml", {"v": "3"}
         )
+
+
+def test_schema_with_local_references():
+    Client.load_config(dummy={"scheme": "https", "host": "example.com"},)
+    client = Client("dummy")
+
+    client._schema = {
+        "openapi": "3.0.0",
+        "servers": [{"url": "/api/v1"}],
+        "paths": {
+            "/api/packages/{packageId}": {
+                "get": {
+                    "tags": ["Packages"],
+                    "operationId": "api.packages._packageId.get",
+                    "summary": "Retrieves a specified package.",
+                    "description": "Retrieves information about a single document package.",
+                    "parameters": [{"$ref": "#/components/parameters/packageId"}],
+                }
+            }
+        },
+        "components": {
+            "parameters": {
+                "packageId": {
+                    "name": "packageId",
+                    "description": "The unique package id.",
+                    "in": "path",
+                    "required": True,
+                    "schema": {
+                        "type": "string",
+                        "example": "asd0sdf08gdfg3njkfg0345dg=",
+                    },
+                }
+            }
+        },
+    }
+
+    # Parameter #/components/parameters/packageId has value of 'in' != "headers", so no headers will be returned
+    headers = get_headers(spec=client._schema, operation="api.packages._packageId.get")
+    assert headers == {}
 
 
 def test_regression_double_slashes():
