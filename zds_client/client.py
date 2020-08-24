@@ -6,6 +6,7 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 import yaml
+from requests.structures import CaseInsensitiveDict
 
 from .config import ClientConfig
 from .log import Log
@@ -268,11 +269,12 @@ class Client:
         if request_kwargs:
             kwargs.update(request_kwargs)
 
-        headers = kwargs.pop("headers", {})
+        headers = CaseInsensitiveDict(kwargs.pop("headers", {}))
         headers.setdefault("Accept", "application/json")
         headers.setdefault("Content-Type", "application/json")
-        headers.update(get_headers(self.schema, operation))
-
+        schema_headers = get_headers(self.schema, operation)
+        for header, value in schema_headers.items():
+            headers.setdefault(header, value)
         if self.auth:
             headers.update(self.auth.credentials())
 
