@@ -295,7 +295,7 @@ class Client:
             self.service,
             url,
             method,
-            headers,
+            dict(headers),
             copy.deepcopy(kwargs.get("data", kwargs.get("json", None))),
             response.status_code,
             dict(response.headers),
