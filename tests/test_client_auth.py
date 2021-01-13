@@ -18,7 +18,11 @@ def test_client_id_in_body():
 
     token = credentials.split(" ")[1]
 
-    payload = jwt.decode(token, verify=False)
+    payload = jwt.decode(
+        token,
+        algorithms=["HS256"],
+        options={"verify_signature": False},
+    )
 
     assert "client_id" in payload
     assert "zds" not in payload

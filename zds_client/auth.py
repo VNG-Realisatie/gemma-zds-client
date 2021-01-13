@@ -2,7 +2,7 @@ import time
 import warnings
 from typing import Union
 
-import jwt
+from .compat import jwt_encode
 
 
 def _warn_ac():
@@ -91,10 +91,9 @@ class ClientAuth:
 
             # TODO: drop custom header in 1.0
             headers = {"client_identifier": self.client_id}
-            encoded = jwt.encode(
+            encoded = jwt_encode(
                 payload, self.secret, headers=headers, algorithm="HS256"
             )
-            encoded = encoded.decode()  # bytestring to string
 
             self._credentials = {
                 "Authorization": "Bearer {encoded}".format(encoded=encoded)
