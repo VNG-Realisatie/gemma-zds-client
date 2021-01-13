@@ -110,7 +110,9 @@ def test_fetch_schema_caching():
 
 
 def test_schema_with_local_references():
-    Client.load_config(dummy={"scheme": "https", "host": "example.com"},)
+    Client.load_config(
+        dummy={"scheme": "https", "host": "example.com"},
+    )
     client = Client("dummy")
 
     client._schema = {
