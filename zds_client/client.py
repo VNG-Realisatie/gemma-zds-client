@@ -119,6 +119,15 @@ class Client:
 
     auth = None
 
+    operation_suffix_mapping = {
+        "list": "_list",
+        "retrieve": "_read",
+        "create": "_create",
+        "update": "_update",
+        "partial_update": "_partial_update",
+        "delete": "_delete",
+    }
+
     def __init__(self, service: str, base_path: str = "/api/v1/"):
         # pull out the config, so that we should be thread safe
         try:
@@ -164,9 +173,6 @@ class Client:
               auth:
                 client_id: some-client-id
                 secret: very-secret
-                scopes:
-                  - scope1
-                  - scope2
 
         Multiple service configs are supported, each with their own alias.
         The `port` and `auth` keys are optional. Port will default to 80 or
@@ -252,7 +258,7 @@ class Client:
         method="GET",
         expected_status=200,
         request_kwargs: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> Union[List[Object], Object]:
         """
         Make the HTTP request using requests.
@@ -328,9 +334,10 @@ class Client:
         resource: str,
         query_params=None,
         request_kwargs: Optional[dict] = None,
-        **path_kwargs
+        **path_kwargs,
     ) -> List[Object]:
-        operation_id = "{resource}_list".format(resource=resource)
+        op_suffix = self.operation_suffix_mapping["list"]
+        operation_id = f"{resource}{op_suffix}"
         url = get_operation_url(
             self.schema, operation_id, base_url=self.base_url, **path_kwargs
         )
@@ -343,9 +350,10 @@ class Client:
         resource: str,
         url=None,
         request_kwargs: Optional[dict] = None,
-        **path_kwargs
+        **path_kwargs,
     ) -> Object:
-        operation_id = "{resource}_read".format(resource=resource)
+        op_suffix = self.operation_suffix_mapping["retrieve"]
+        operation_id = f"{resource}{op_suffix}"
         if url is None:
             url = get_operation_url(
                 self.schema, operation_id, base_url=self.base_url, **path_kwargs
@@ -357,9 +365,10 @@ class Client:
         resource: str,
         data: dict,
         request_kwargs: Optional[dict] = None,
-        **path_kwargs
+        **path_kwargs,
     ) -> Object:
-        operation_id = "{resource}_create".format(resource=resource)
+        op_suffix = self.operation_suffix_mapping["create"]
+        operation_id = f"{resource}{op_suffix}"
         url = get_operation_url(
             self.schema, operation_id, base_url=self.base_url, **path_kwargs
         )
@@ -378,9 +387,10 @@ class Client:
         data: dict,
         url=None,
         request_kwargs: Optional[dict] = None,
-        **path_kwargs
+        **path_kwargs,
     ) -> Object:
-        operation_id = "{resource}_update".format(resource=resource)
+        op_suffix = self.operation_suffix_mapping["update"]
+        operation_id = f"{resource}{op_suffix}"
         if url is None:
             url = get_operation_url(
                 self.schema, operation_id, base_url=self.base_url, **path_kwargs
@@ -400,9 +410,10 @@ class Client:
         data: dict,
         url=None,
         request_kwargs: Optional[dict] = None,
-        **path_kwargs
+        **path_kwargs,
     ) -> Object:
-        operation_id = "{resource}_partial_update".format(resource=resource)
+        op_suffix = self.operation_suffix_mapping["partial_update"]
+        operation_id = f"{resource}{op_suffix}"
         if url is None:
             url = get_operation_url(
                 self.schema, operation_id, base_url=self.base_url, **path_kwargs
@@ -421,9 +432,10 @@ class Client:
         resource: str,
         url=None,
         request_kwargs: Optional[dict] = None,
-        **path_kwargs
+        **path_kwargs,
     ) -> Object:
-        operation_id = "{resource}_delete".format(resource=resource)
+        op_suffix = self.operation_suffix_mapping["delete"]
+        operation_id = f"{resource}{op_suffix}"
         if url is None:
             url = get_operation_url(
                 self.schema, operation_id, base_url=self.base_url, **path_kwargs
@@ -440,14 +452,15 @@ class Client:
         self,
         operation_id: str,
         data: dict,
+        method="POST",
         url=None,
         request_kwargs: Optional[dict] = None,
-        **path_kwargs
+        **path_kwargs,
     ) -> Union[List[Object], Object]:
         if url is None:
             url = get_operation_url(
                 self.schema, operation_id, base_url=self.base_url, **path_kwargs
             )
         return self.request(
-            url, operation_id, method="POST", json=data, request_kwargs=request_kwargs
+            url, operation_id, method=method, json=data, request_kwargs=request_kwargs
         )
