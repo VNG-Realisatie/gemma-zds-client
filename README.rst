@@ -124,7 +124,7 @@ URL.
 
     client = Client.from_url('https://api.nl/v1/resource/123')
 
-Indien authorisatie hierop nodig is, kan je deze zelf assignen:
+Indien autorisatie hierop nodig is, kan je deze zelf assignen:
 
 .. code-block:: python
 
@@ -133,7 +133,6 @@ Indien authorisatie hierop nodig is, kan je deze zelf assignen:
     client.auth = ClientAuth(
         client_id='my-client-id',
         secret='my-client-secret',
-        **claims
     )
 
 Resources manipuleren
@@ -160,6 +159,24 @@ manipuleren:
         'bronorganisatie': '000000000',
         'zaaktype': 'http://localhost:8002/api/v1/zaaktypen/<uuid>'
     })
+
+**Operation suffixes**
+
+De ``operation_id`` van de OAS-operations staan centraal - op basis hiervan wordt de
+URL + HTTP method opgehaald die nodig is voor de call. Je kan deze suffixes overriden
+in client subclasses:
+
+.. code-block:: python
+
+    class MyClient(Client):
+        operation_suffix_mapping = {
+            "list": "List",
+            "retrieve": "Retrieve",
+            "create": "Create",
+            "update": "Update",
+            "partial_update": "PartialUpdate",
+            "delete": "Delete",
+        }
 
 
 Schema introspectie
@@ -214,9 +231,8 @@ Install using:
 This will pull in the extra dependencies. Make sure to follow the `nlx-url-rewriter`_
 setup instructions.
 
-
-.. |build-status| image:: https://travis-ci.org/VNG-Realisatie/gemma-zds-client.svg?branch=master
+.. |build-status| image:: https://github.com/VNG-Realisatie/gemma-zds-client/workflows/Run%20CI/badge.svg
     :alt: Build status
-    :target: https://travis-ci.org/VNG-Realisatie/gemma-zds-client
+    :target: https://github.com/VNG-Realisatie/gemma-zds-client/actions?query=workflow%3A%22Run+CI%22
 
 .. _nlx-url-rewriter: https://pypi.org/project/nlx-url-rewriter/
