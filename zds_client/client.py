@@ -1,7 +1,7 @@
 import copy
 import logging
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -12,7 +12,7 @@ from .config import ClientConfig
 from .log import Log
 from .oas import schema_fetcher
 from .registry import registry
-from .schema import get_operation_url
+from .schema import get_headers, get_operation_url
 
 logger = logging.getLogger(__name__)
 
@@ -22,90 +22,6 @@ UUID_PATTERN = re.compile(
     r"[0-9a-f]{8}\-[0-9a-f]{4}\-4[0-9a-f]{3}\-[89ab][0-9a-f]{3}\-[0-9a-f]{12}",
     flags=re.I,
 )
-
-
-def separate_params(params: List[dict]) -> Tuple[List, List]:
-    """Separate parameters explicitly defined and referenced by `$ref`"""
-    reference_params = []
-    regular_params = []
-    for param in params:
-        if param.get("$ref") is None:
-            regular_params.append(param)
-        else:
-            reference_params.append(param)
-
-    return regular_params, reference_params
-
-
-def filter_header_regular_params(params: list) -> list:
-    return [param for param in params if param["in"] == "header" and param["required"]]
-
-
-def filter_header_reference_params(params: list, spec: dict) -> list:
-    """Filter header parameters which are in definitions referenced with `$ref`"""
-    header_params = []
-
-    for param in params:
-        reference = param.get("$ref")
-        # Local reference case (parameter in specification document)
-        if reference[:2] == "#/":
-            split_path = reference[2:].split("/")
-            tmp_parameter = spec
-            for parent in split_path:
-                tmp_parameter = tmp_parameter.get(parent)
-
-            if tmp_parameter["in"] == "header" and tmp_parameter["required"]:
-                header_params.append(tmp_parameter)
-        # TODO Remote reference case (parameter in a document on the same server)
-        elif "//" not in reference:
-            raise NotImplementedError("To be implemented")
-        # TODO URL reference case (parameter in a document on another server)
-        elif "//" in reference:
-            raise NotImplementedError("To be implemented")
-
-    return header_params
-
-
-def filter_header_params(params: list, spec: dict) -> list:
-    """Extract parameters required for headers"""
-    # Separate the parameters that use references
-    regular_parameters, reference_parameters = separate_params(params)
-
-    # Filter regular and reference parameters
-    header_regular_parameters = filter_header_regular_params(regular_parameters)
-    header_reference_parameters = filter_header_reference_params(
-        reference_parameters, spec
-    )
-    return header_regular_parameters + header_reference_parameters
-
-
-def get_headers(spec: dict, operation: str) -> dict:
-    """
-    Extract required headers and use the default value from the API spec.
-    """
-    headers = {}
-
-    for path, methods in spec["paths"].items():
-        path_parameters = filter_header_params(methods.get("parameters", []), spec)
-        for name, method in methods.items():
-            if name == "parameters":
-                continue
-
-            if method["operationId"] != operation:
-                continue
-
-            method_parameters = filter_header_params(method.get("parameters", []), spec)
-
-            for param in path_parameters + method_parameters:
-                enum = param["schema"].get("enum", [])
-                default = param["schema"].get("default")
-
-                assert (
-                    len(enum) == 1 or default
-                ), "Can't choose an appropriate default header value"
-                headers[param["name"]] = default or enum[0]
-
-    return headers
 
 
 class ClientError(Exception):
