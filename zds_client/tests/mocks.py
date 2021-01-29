@@ -2,6 +2,7 @@ import contextlib
 import hashlib
 import json
 import sys
+import warnings
 from urllib.parse import urljoin
 
 from ..client import Client
@@ -25,6 +26,11 @@ class MockClient(Client, metaclass=MockClientMeta):
         self._schema = {}
 
     def request(self, path: str, operation: str, method="GET", *args, **kwargs):
+        warnings.warn(
+            "The MockClient is scheduled for removal in 1.0. Use the 'requests-mock' "
+            "or 'responses' library instead.",
+            DeprecationWarning,
+        )
         url = urljoin(self.base_url, path)
 
         # temprorary solution for testing requests with notifications
@@ -38,6 +44,11 @@ class MockClient(Client, metaclass=MockClientMeta):
 
 @contextlib.contextmanager
 def mock_client(responses: dict):
+    warnings.warn(
+        "The MockClient is scheduled for removal in 1.0. Use the 'requests-mock' "
+        "or 'responses' library instead.",
+        DeprecationWarning,
+    )
     try:
         from django.test import override_settings
     except ImportError as exc:
