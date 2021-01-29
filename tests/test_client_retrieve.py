@@ -6,9 +6,9 @@ SCHEMA = {
     "openapi": "3.0.0",
     "servers": [{"url": "/api/v1"}],
     "paths": {
-        "some-resource": {
+        "some-resource/{id}": {
             "get": {
-                "operationId": "some-resource_list",
+                "operationId": "some-resource_read",
                 "parameters": [
                     {
                         "name": "Some-Header",
@@ -29,22 +29,36 @@ SCHEMA = {
 }
 
 
-def test_list_request():
+def test_read_request():
     auth = {"client_id": "yes", "secret": "oh-no"}
     Client.load_config(dummy={"scheme": "https", "host": "example.com", "auth": auth})
     client = Client("dummy")
     client._schema = SCHEMA
 
     with requests_mock.Mocker() as m:
-        m.get("https://example.com/api/v1/some-resource?foo=bar", json=[{"ok": "yes"}])
+        m.get("https://example.com/api/v1/some-resource/1", json={"ok": "yes"})
 
-        response = client.list("some-resource", params={"foo": "bar"})
+        response = client.retrieve("some-resource", id=1)
 
-    assert response == [{"ok": "yes"}]
-    assert m.last_request.query == "foo=bar"
+    assert response == {"ok": "yes"}
     assert "Some-Header" in m.last_request.headers
     assert m.last_request.headers["Some-Header"] == "some-value"
     assert "Authorization" in m.last_request.headers
+
+
+def test_read_request_explicit_url():
+    Client.load_config(dummy={"scheme": "https", "host": "example.com"})
+    client = Client("dummy")
+    client._schema = SCHEMA
+    resource_url = "https://example.com/api/v1/some-resource/2"
+
+    with requests_mock.Mocker() as m:
+        m.get(resource_url, json={"ok": "yarp"})
+
+        response = client.retrieve("some-resource", url=resource_url)
+
+    assert response == {"ok": "yarp"}
+    assert m.last_request.url == resource_url
 
 
 def test_kwargs_forwarded_to_requests():
@@ -53,10 +67,11 @@ def test_kwargs_forwarded_to_requests():
     client._schema = SCHEMA
 
     with requests_mock.Mocker() as m:
-        m.get("https://example.com/api/v1/some-resource", json=[{"ok": "yes"}])
+        m.get("https://example.com/api/v1/some-resource/1", json=[{"ok": "yes"}])
 
-        client.list(
+        client.retrieve(
             "some-resource",
+            id=1,
             request_kwargs={
                 "headers": {
                     "Other-Header": "value",
