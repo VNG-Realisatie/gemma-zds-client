@@ -1,6 +1,7 @@
 import copy
 import logging
 import re
+import warnings
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urljoin, urlparse
 
@@ -140,15 +141,14 @@ class Client:
             entry for entry in self._log.entries() if entry["service"] == self.service
         )
 
-    def _get_base_url(self) -> str:
-        if self._base_url is not None:
-            return self._base_url
-        return "{}{}".format(self._config.base_url, self.base_path)
+    @property
+    def base_url(self) -> str:
+        default = f"{self._config.base_url}{self.base_path}"
+        return self._base_url or default
 
-    def _set_base_url(self, base_url: str) -> None:
+    @base_url.setter
+    def base_url(self, base_url: str) -> None:
         self._base_url = base_url
-
-    base_url = property(_get_base_url, _set_base_url)
 
     @property
     def schema(self):

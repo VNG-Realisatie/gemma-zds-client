@@ -46,31 +46,6 @@ def test_client_from_url_thread_safe():
     assert client2.base_url == "https://example2.com/api/v2/"
 
 
-def test_client_loading():
-    Client.load_config(zrc={"scheme": "http", "host": "localhost", "port": 8000})
-
-    client = Client("zrc")
-    assert client.base_url == "http://localhost:8000/api/v1/"
-
-
-def test_load_with_auth():
-    Client.load_config(
-        zrc={
-            "scheme": "http",
-            "host": "localhost",
-            "port": 8000,
-            "auth": {"client_id": "foo", "secret": "bar"},
-        }
-    )
-
-    client = Client("zrc")
-    credentials = client.auth.credentials()
-
-    assert "Authorization" in credentials
-    bits = credentials["Authorization"].split(".")
-    assert len(bits) == 3
-
-
 def test_fetch_schema_caching():
     """
     Assert that the same schema is not necessarily downloaded multiple times.

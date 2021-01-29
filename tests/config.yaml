@@ -1,0 +1,9 @@
+---
+
+client1:
+  scheme: https
+  host: example.com
+  port: 443
+  auth:
+    client_id: some-client-id
+    secret: oh-no
