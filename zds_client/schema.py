@@ -8,11 +8,23 @@ DEFAULT_PATH_PARAMETERS = {"version": "1"}
 
 TYPE_ARRAY = "array"
 
+DEFAULT_SERVERS = [
+    {
+        "url": "/",
+    }
+]
+
 
 def get_operation_url(
     spec: dict, operation: str, pattern_only=False, base_url: str = None, **kwargs
 ) -> str:
-    url = spec["servers"][0]["url"] if not base_url else base_url
+    if base_url:
+        url = base_url
+    else:
+        # servers is optional, see https://swagger.io/specification/#openapi-object
+        servers = spec.get("servers") or DEFAULT_SERVERS
+        url = servers[0]["url"]
+
     base_path = urlparse(url).path
 
     for path, methods in spec["paths"].items():
