@@ -34,5 +34,9 @@ viable.
   requires Django. Use requests-mock_ or responses_ instead to mock the underlying
   ``requests`` calls.
 
+* ``zds_client.nlx`` module is deprecated. `zgw-consumers`_ is a better solution for
+  Django-based projects. This module was Django-only already because of the dependency
+  ``nlx-url-rewriter``.
+
 .. _requests-mock: https://pypi.org/project/requests-mock/
 .. _responses: https://pypi.org/project/responses/
