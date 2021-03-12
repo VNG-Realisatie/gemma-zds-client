@@ -3,11 +3,18 @@ Implements an NLX URL-rewrite client.
 
 Requires the nlx-url-rewriter package.
 """
+import warnings
 from typing import Any, Optional, Union
 
 from nlx_url_rewriter.rewriter import Rewriter
 
 from .client import Client
+
+warnings.warn(
+    "NLX support in gemma-zds-client is deprecated and scheduled for removal in 1.0. "
+    "Instead, you should migrate to https://pypi.org/project/zgw-consumers.",
+    DeprecationWarning,
+)
 
 
 class NLXClient(Client):

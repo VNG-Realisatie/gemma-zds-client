@@ -1,6 +1,5 @@
 import time
 import warnings
-from typing import Union
 
 from .compat import jwt_encode
 
@@ -21,10 +20,10 @@ class ClientAuth:
     Usage:
 
     >>> auth = ClientAuth(
-            client_id='zrc',
-            secret='my-secret',
-            user_id='my-id',
-            user_representation='my-name'
+            client_id="zrc",
+            secret="my-secret",
+            user_id="my-id",
+            user_representation="my-name"
         )
     >>> auth.credentials()
     {
@@ -37,40 +36,19 @@ class ClientAuth:
         self,
         client_id: str,
         secret: str,
-        user_id: Union[str, None] = None,
-        user_representation: Union[str, None] = None,
+        user_id: str = "",
+        user_representation: str = "",
         **claims
     ):
         self.client_id = client_id
-
-        if secret is None:
-            warnings.warn(
-                "`None` secret received -  casting to empty string", UserWarning
-            )
-            secret = ""
-
         self.secret = secret
 
         if claims:
             _warn_ac()
         self.claims = claims
 
-        self.user_id = user_id or ""
-        self.user_representation = user_representation or ""
-
-    def set_claims(self, **kwargs) -> None:
-        """
-        Set the claims for the client.
-        """
-        _warn_ac()
-        claims = self.claims.copy()
-        claims.update(**kwargs)
-
-        # invalidate cache if needed (claims have changed)
-        if hasattr(self, "_credentials") and claims != self.claims:
-            del self._credentials
-
-        self.claims = claims
+        self.user_id = user_id
+        self.user_representation = user_representation
 
     def credentials(self) -> dict:
         """

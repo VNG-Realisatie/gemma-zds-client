@@ -179,60 +179,20 @@ in client subclasses:
         }
 
 
-Schema introspectie
--------------------
-
-Met de ``schema`` module kan je introspectie doen op resource URLs:
-
-.. code-block:: python
-
-    from zds_client import Client
-    from zds_client.schema import Schema
-
-    zrc_client = Client('zrc')  # gebruik alias uit configuratie
-
-    schema = Schema(zrc_client.schema)
-
-    input_schema = schema.get_request_resource_schema(
-        'https://api.nl/v1/resource/123', method='GET'
-    )
-    assert input_schema['type'] == 'object'
-
-    params = schema.get_request_parameters(
-        'https://api.nl/v1/resource/123', method='GET'
-    )
-    assert type(params) == list
-
-    output_schema = schema.get_response_resource_schema(
-        'https://api.nl/v1/resource/123',
-        method='GET', status_code='200'
-    )
-    assert output_schema['type'] == 'object'
-
-Usage with NLX
---------------
+Usage with NLX_
+---------------
 
 When you're using NLX outways, the URLs of resources change because of this.
 Services expoxed via NLX inways don't understand local outway URLs, so these
 need to get rewritten.
 
-In Django projects, you can make use of `nlx-url-rewriter`_ to define rewrite
-targets before the requests are sent and right after responses are received.
+In Django projects, you can use `zgw-consumers`_, which has built-in support for NLX
+and the required URL rewrites. This library is a dependency of zgw-consumers.
 
-The rewriter is implemented in the ``zds_client.nlx.NLXClient`` class, which
-you can use instead of ``zds_client.Client``.
-
-Install using:
-
-.. code-block:: bash
-
-    pip install gemma-zds-client[nlx]
-
-This will pull in the extra dependencies. Make sure to follow the `nlx-url-rewriter`_
-setup instructions.
 
 .. |build-status| image:: https://github.com/VNG-Realisatie/gemma-zds-client/workflows/Run%20CI/badge.svg
     :alt: Build status
     :target: https://github.com/VNG-Realisatie/gemma-zds-client/actions?query=workflow%3A%22Run+CI%22
 
-.. _nlx-url-rewriter: https://pypi.org/project/nlx-url-rewriter/
+.. _NLX: https://nlx.io
+.. _zgw-consumers: https://pypi.org/project/zgw-consumers/
