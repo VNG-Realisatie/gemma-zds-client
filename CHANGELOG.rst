@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.15.0 (2021-??-??)
+0.15.0 (2021-03-15)
 -------------------
 
 Preparations towards a 1.0 release
@@ -40,3 +40,8 @@ viable.
 
 .. _requests-mock: https://pypi.org/project/requests-mock/
 .. _responses: https://pypi.org/project/responses/
+
+**New stuff**
+
+* Added public API documentation, hosted on readthedocs.io
+* Added docs build to CI workflow
