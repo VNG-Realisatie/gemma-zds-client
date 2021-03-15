@@ -40,6 +40,9 @@ class ClientAuth:
         user_representation: str = "",
         **claims
     ):
+        """
+        Initialize the client authentication configuration.
+        """
         self.client_id = client_id
         self.secret = secret
 

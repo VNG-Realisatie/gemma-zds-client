@@ -46,7 +46,11 @@ class Client:
     }
 
     def __init__(self, service: str, base_path: str = "/api/v1/"):
-        # pull out the config, so that we should be thread safe
+        """
+        Obtain a client instance from the configuration registry.
+
+        :param service: Alias of the service/API
+        """
         try:
             self._config = registry[service]
         except KeyError:
@@ -184,7 +188,7 @@ class Client:
 
         :return: a list or dict, the result of calling response.json()
         :raises: :class:`requests.HTTPException` for internal server errors
-        :raises: :class:``ClientError` for HTTP 4xx status codes
+        :raises: :class:`ClientError` for HTTP 4xx status codes
         """
         url = urljoin(self.base_url, path)
 

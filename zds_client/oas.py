@@ -50,3 +50,9 @@ class SchemaFetcher:
 
 # sentinel instance, with a cache
 schema_fetcher = SchemaFetcher()
+"""
+Sentinel schema fetcher instance, used by :class:`zds_client.client.Client`.
+
+Note that you can mutate ``schema_fetcher.cache`` to replace it with another cache
+backend, for example.
+"""
