@@ -1,16 +1,6 @@
 import time
-import warnings
 
 from .compat import jwt_encode
-
-
-def _warn_ac():
-    warnings.warn(
-        "Starting with 1.0, specifying claims will no longer be "
-        "supported. Authorizations should be configured on the AC "
-        "instead",
-        DeprecationWarning,
-    )
 
 
 class ClientAuth:
@@ -45,13 +35,12 @@ class ClientAuth:
         """
         self.client_id = client_id
         self.secret = secret
-
-        if claims:
-            _warn_ac()
-        self.claims = claims
-
+        # audit information
         self.user_id = user_id
         self.user_representation = user_representation
+
+        # any extra arbitrary claims are just forwarded to the payload
+        self.claims = claims
 
     def credentials(self) -> dict:
         """
@@ -66,9 +55,8 @@ class ClientAuth:
                 "client_id": self.client_id,
                 "user_id": self.user_id,
                 "user_representation": self.user_representation,
+                **self.claims,
             }
-            if self.claims:
-                payload["zds"] = self.claims
 
             # TODO: drop custom header in 1.0
             headers = {"client_identifier": self.client_id}
