@@ -1,6 +1,66 @@
 Changelog
 =========
 
+1.0.0 (2021-03-16)
+------------------
+
+Stable release - according to semantic versioning new minor releases will be backwards
+compatible and breaking changes will bump the major version number. Note that this
+applies to the *public* API.
+
+The public API is frozen in this release. Anything documented in ``docs`` (including
+the reference) is considered public API, anything else is considered private API.
+
+**Breaking changes**
+
+A number of deprecations have been removed:
+
+* ``zds_client.ClientAuth`` - any extra kwargs are now included in the JWT payload
+  rather than being nested in a ``zds`` namespace object.
+
+  Before:
+
+  .. code-block:: python
+
+      auth = ClientAuth("client-id", "secret", foo="bar")
+
+  would lead to the payload:
+
+  .. code-block:: json
+
+      {
+        "iss": "client-id",
+        "iat": "1615891267",
+        "client_id": "client-id",
+        "user_id": "",
+        "user_representation": "",
+        "zds": {
+            "foo": "bar",
+        }
+      }
+
+  Now the resulting payload is:
+
+  .. code-block:: json
+
+      {
+        "iss": "client-id",
+        "iat": "1615891267",
+        "client_id": "client-id",
+        "user_id": "",
+        "user_representation": "",
+        "foo": "bar"
+      }
+
+* The custom ``client_identifier`` JWT header is removed. This was only kept for
+  interaction with alpha releases of the ZGW standard. The ``client_id`` claim in the
+  payload is the canonical source of this information.
+
+* ``zds_client.tests`` package is removed, which included the ``MockClient``. Replace
+  these calls with requests-mock_ or responses_ instead.
+
+* Removed ``zds_client.nlx`` - use `zgw-consumers`_ instead.
+
 0.15.0 (2021-03-15)
 -------------------
 
