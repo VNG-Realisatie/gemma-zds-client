@@ -13,7 +13,7 @@
 import os
 import sys
 
-source_dir = os.path.join(os.path.dirname(os.path.abspath(".")), "zds_client")
+source_dir = os.path.join(os.path.dirname(os.path.abspath(".")))
 
 sys.path.insert(0, source_dir)
 
