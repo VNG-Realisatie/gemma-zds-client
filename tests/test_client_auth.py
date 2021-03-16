@@ -45,3 +45,22 @@ def test_explicit_alg():
     jwt_header = json.loads(decoded)
 
     assert jwt_header["alg"] == "HS256"
+
+
+def test_extra_claims():
+    """
+    Test that extra claims are included in the payload
+    """
+    auth = ClientAuth(client_id="client id", secret="secret", email="foo@example.com")
+    credentials = auth.credentials()["Authorization"]
+
+    token = credentials.split(" ")[1]
+
+    payload = jwt.decode(
+        token,
+        algorithms=["HS256"],
+        options={"verify_signature": False},
+    )
+
+    assert "email" in payload
+    assert payload["email"] == "foo@example.com"
