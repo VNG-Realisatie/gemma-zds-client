@@ -2,6 +2,8 @@ import time
 
 from .compat import jwt_encode
 
+JWT_ALG = "HS256"
+
 
 class ClientAuth:
     """
@@ -58,11 +60,7 @@ class ClientAuth:
                 **self.claims,
             }
 
-            # TODO: drop custom header in 1.0
-            headers = {"client_identifier": self.client_id}
-            encoded = jwt_encode(
-                payload, self.secret, headers=headers, algorithm="HS256"
-            )
+            encoded = jwt_encode(payload, self.secret, algorithm=JWT_ALG)
 
             self._credentials = {
                 "Authorization": "Bearer {encoded}".format(encoded=encoded)
