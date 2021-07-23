@@ -97,7 +97,9 @@ def separate_params(params: List[dict]) -> Tuple[List, List[str]]:
 
 
 def filter_header_regular_params(params: list) -> list:
-    return [param for param in params if param["in"] == "header" and param["required"]]
+    return [
+        param for param in params if param["in"] == "header" and param.get("required")
+    ]
 
 
 def filter_header_reference_params(params: list, spec: dict) -> list:
@@ -113,7 +115,7 @@ def filter_header_reference_params(params: list, spec: dict) -> list:
             for parent in split_path:
                 tmp_parameter = tmp_parameter.get(parent)
 
-            if tmp_parameter["in"] == "header" and tmp_parameter["required"]:
+            if tmp_parameter["in"] == "header" and tmp_parameter.get("required"):
                 header_params.append(tmp_parameter)
         # TODO Remote reference case (parameter in a document on the same server)
         elif "//" not in reference:
