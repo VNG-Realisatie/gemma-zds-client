@@ -125,6 +125,75 @@ def test_schema_with_local_references():
     assert headers == {}
 
 
+def test_schema_with_non_required_header_params():
+    Client.load_config(
+        dummy={"scheme": "https", "host": "example.com"},
+    )
+    client = Client("dummy")
+
+    client._schema = {
+        "openapi": "3.0.0",
+        "servers": [{"url": "/api/v1"}],
+        "paths": {
+            "/api/packages/": {
+                "get": {
+                    "tags": ["Packages"],
+                    "operationId": "api.packages._packageId.get",
+                    "summary": "Retrieves a specified package.",
+                    "description": "Retrieves information about a single document package.",
+                    "parameters": [
+                        {
+                            "in": "header",
+                            "name": "Accept-Crs",
+                            "description": "test param",
+                            "schema": {"type": "string", "enum": ["EPSG:4326"]},
+                        }
+                    ],
+                }
+            }
+        },
+    }
+
+    headers = get_headers(spec=client._schema, operation="api.packages._packageId.get")
+    assert headers == {}
+
+
+def test_schema_non_required_header_params_in_local_references():
+    Client.load_config(
+        dummy={"scheme": "https", "host": "example.com"},
+    )
+    client = Client("dummy")
+
+    client._schema = {
+        "openapi": "3.0.0",
+        "servers": [{"url": "/api/v1"}],
+        "paths": {
+            "/api/packages/": {
+                "get": {
+                    "tags": ["Packages"],
+                    "operationId": "api.packages._packageId.get",
+                    "summary": "Retrieves a specified package.",
+                    "description": "Retrieves information about a single document package.",
+                    "parameters": [{"$ref": "#/components/parameters/testHeader"}],
+                }
+            }
+        },
+        "components": {
+            "parameters": {
+                "testHeader": {
+                    "in": "header",
+                    "name": "Accept-Crs",
+                    "description": "test param",
+                    "schema": {"type": "string", "enum": ["EPSG:4326"]},
+                },
+            }
+        },
+    }
+
+    headers = get_headers(spec=client._schema, operation="api.packages._packageId.get")
+    assert headers == {}
+
+
 def test_regression_double_slashes():
     object_url = "http://example.com/api/v1/zaken/28dcfc90-2d26-4d4e-8261-a9202ee56185"
     client = Client.from_url(object_url)
