@@ -26,7 +26,9 @@ UUID_PATTERN = re.compile(
 
 
 class ClientError(Exception):
-    pass
+    def __init__(self, message, status_code: int) -> None:
+        super().__init__(message)
+        self.status_code = status_code
 
 
 class Client:
@@ -234,7 +236,7 @@ class Client:
         except requests.HTTPError as exc:
             if response.status_code >= 500:
                 raise
-            raise ClientError(response_json) from exc
+            raise ClientError(response_json, status_code=response.status_code) from exc
 
         assert response.status_code == expected_status, response_json
         return response_json
