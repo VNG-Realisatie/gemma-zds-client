@@ -256,7 +256,7 @@ class Client:
         query_params=None,
         request_kwargs: Optional[dict] = None,
         **path_kwargs,
-    ) -> List[Object]:
+    ) -> Union[List[Object], Object]:
         op_suffix = self.operation_suffix_mapping["list"]
         operation_id = f"{resource}{op_suffix}"
         url = get_operation_url(
