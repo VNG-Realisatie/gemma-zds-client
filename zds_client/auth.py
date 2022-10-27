@@ -1,8 +1,20 @@
 import time
 
+# from typing import Protocol
+from typing import Dict
+
 import jwt
 
 JWT_ALG = "HS256"
+
+
+HeaderDict = Dict[str, str]
+
+
+# class ClientAuthProtocol(Protocol):
+
+#     def credentials(self) -> HeaderDict:
+#         ...
 
 
 class ClientAuth:

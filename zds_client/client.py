@@ -2,17 +2,17 @@ import copy
 import logging
 import re
 import warnings
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urljoin, urlparse
 
 import requests
-import yaml
 from requests.structures import CaseInsensitiveDict
 
+from .auth import ClientAuth
 from .config import ClientConfig
 from .log import Log
 from .oas import schema_fetcher
-from .registry import registry
 from .schema import get_headers, get_operation_url
 
 logger = logging.getLogger(__name__)
@@ -29,14 +29,8 @@ class ClientError(Exception):
     pass
 
 
-class Client:
-
-    _schema = None
-    _log = Log()
-
-    auth = None
-
-    operation_suffix_mapping = {
+def _get_default_op_suffix_mapping() -> Dict[str, str]:
+    return {
         "list": "_list",
         "retrieve": "_read",
         "create": "_create",
@@ -45,81 +39,25 @@ class Client:
         "delete": "_delete",
     }
 
-    def __init__(self, service: str, base_path: str = "/api/v1/"):
-        """
-        Obtain a client instance from the configuration registry.
 
-        :param service: Alias of the service/API
-        """
-        try:
-            self._config = registry[service]
-        except KeyError:
-            raise RuntimeError(
-                "Service '{service}' is not known in the client registry. "
-                "Did you load the config first through `Client.load_config(path, **manual)`?".format(
-                    service=service
-                )
-            )
+@dataclass
+class Client:
+    api_root: str
+    auth: Optional[ClientAuth] = None
+    operation_suffix_mapping: Dict[str, str] = field(
+        default_factory=_get_default_op_suffix_mapping
+    )
 
-        self.service = service
-        self.base_path = base_path
+    _schema: Optional[dict] = field(init=False, default=None)
+    _config: ClientConfig = field(init=False)
+    _log = Log()
 
-        self._base_url = None
-
-        self.auth = self._config.auth
-
-    def __repr__(self):
-        return "<%s: service=%r base_url=%r>" % (
-            self.__class__.__name__,
-            self.service,
-            self.base_url,
-        )
-
-    @classmethod
-    def load_config(cls, path: str = None, **manual):
-        """
-        Initialize the client configuration.
-
-        The configuration is delegated to the registry, so multiple instances
-        of the client share the same configuration.
-
-        The config file should have the following format:
-
-        .. code-block:: yaml
-
-            alias1:
-              scheme: http(s)
-              host: localhost
-              port: 8000
-              auth:
-                client_id: some-client-id
-                secret: very-secret
-
-        Multiple service configs are supported, each with their own alias.
-        The `port` and `auth` keys are optional. Port will default to 80 or
-        443 depending on the scheme.
-
-        :param path: path to the yaml file holding the config
-        :param manual: any manual overrides, as kwargs. Note this completely
-          overwrites any existing config in the YAML file if specified.
-        """
-        if path is not None:
-            logger.info("Loading config from %s", path)
-            with open(path, "r") as config_file:
-                client_configs = yaml.safe_load(config_file)
-
-            for alias, _config in client_configs.items():
-                config = ClientConfig.from_dict(_config)
-                registry.register(alias, config)
-
-        if manual:
-            logger.info("Applying manual config: %r", manual)
-            for alias, _config in manual.items():
-                config = ClientConfig.from_dict(_config)
-                registry.register(alias, config)
+    def __post_init__(self):
+        self._config = ClientConfig.from_api_root(self.api_root)
 
     @classmethod
     def from_url(cls, detail_url: str) -> "Client":
+        warnings.warn("Client.from_url will be removed in 2.0", DeprecationWarning)
         parsed_url = urlparse(detail_url)
 
         # we know that API endpoints look like:
@@ -141,6 +79,7 @@ class Client:
         """
         Local log entries.
         """
+        warnings.warn("Client.log will be removed in 2.0", DeprecationWarning)
         return (
             entry for entry in self._log.entries() if entry["service"] == self.service
         )

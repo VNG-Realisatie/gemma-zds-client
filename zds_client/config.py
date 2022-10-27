@@ -1,43 +1,33 @@
+from dataclasses import dataclass
+from typing import Optional
 from urllib.parse import urlparse
 
-from .auth import ClientAuth
+DEFAULT_PORTS = {
+    "https": 443,
+    "http": 80,
+}
 
-default_ports = {"https": 443, "http": 80}
 
-
+@dataclass
 class ClientConfig:
-    def __init__(
-        self,
-        scheme: str = "https",
-        host: str = "localhost",
-        port: int = None,
-        auth: ClientAuth = None,
-    ):
-        self.scheme = scheme
-        self.host = host
-        self.port = port if port else default_ports[scheme]
-        self.auth = auth
-
-    def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self.base_url)
+    scheme: str = "https"
+    host: str = "localhost"
+    port: Optional[int] = None
+    base_path: str = "/"
 
     @classmethod
-    def from_dict(cls, _config: dict) -> "ClientConfig":
-        _auth = _config.pop("auth", None)
-        auth = None if not _auth else ClientAuth(**_auth)
-        return cls(**_config, auth=auth)
-
-    @classmethod
-    def from_url(cls, detail_url: str) -> "ClientConfig":
-        parsed_url = urlparse(detail_url)
-
+    def from_api_root(cls, api_root: str) -> "ClientConfig":
+        parsed_url = urlparse(api_root)
         if ":" in parsed_url.netloc:
             host, port = parsed_url.netloc.split(":")
         else:
             host, port = parsed_url.netloc, None
-
-        # register the config
-        return cls.from_dict({"scheme": parsed_url.scheme, "host": host, "port": port})
+        return cls(
+            scheme=parsed_url.scheme,
+            host=host,
+            port=int(port) if port is not None else None,
+            base_path=parsed_url.path or "/",
+        )
 
     @property
     def base_url(self) -> str:
@@ -47,7 +37,7 @@ class ClientConfig:
         base = "{}://{}".format(self.scheme, self.host)
 
         # if it's the default ports, we don't need to be explicit
-        default_port = default_ports[self.scheme]
+        default_port = DEFAULT_PORTS[self.scheme]
         if self.port == default_port:
             return base
 
