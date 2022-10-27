@@ -1,6 +1,6 @@
 import time
 
-from .compat import jwt_encode
+import jwt
 
 JWT_ALG = "HS256"
 
@@ -60,7 +60,7 @@ class ClientAuth:
                 **self.claims,
             }
 
-            encoded = jwt_encode(payload, self.secret, algorithm=JWT_ALG)
+            encoded = jwt.encode(payload, self.secret, algorithm=JWT_ALG)
 
             self._credentials = {
                 "Authorization": "Bearer {encoded}".format(encoded=encoded)
