@@ -34,6 +34,8 @@ class ClientAuth:
         'Authorization': '<base64>.<base64>.<base64>'
     }
     >>> requests.get(url, **auth.credentials())
+
+    TODO: make pluggable and implement some common auth schemes.
     """
 
     def __init__(

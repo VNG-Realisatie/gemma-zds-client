@@ -1,4 +1,3 @@
-import copy
 import logging
 import re
 import warnings
@@ -10,7 +9,6 @@ import requests
 from requests.structures import CaseInsensitiveDict
 
 from .auth import ClientAuth
-from .config import ClientConfig
 from .log import Log
 from .oas import schema_fetcher
 from .schema import get_headers, get_operation_url
@@ -43,61 +41,78 @@ def _get_default_op_suffix_mapping() -> Dict[str, str]:
 @dataclass
 class Client:
     api_root: str
+    """
+    Fully qualified base URL of the API/service, e.g. https://example.com/api/v1/.
+    """
+    oas_location: str = ""
+    """
+    Relative location of the OpenAPI spec.
+
+    By default, it is assumed the API spec is hosted at the API root.
+    """
     auth: Optional[ClientAuth] = None
+    """
+    Optional :class:`ClientAuth`-like interface specifying the authentication parameters.
+    """
     operation_suffix_mapping: Dict[str, str] = field(
         default_factory=_get_default_op_suffix_mapping
     )
+    """
+    Mapping of semantic RESTful operations to the operation-IDs used in the API spec.
+
+    TODO: make this more robust - operationId is an _optional_ key and may be empty.
+    """
 
     _schema: Optional[dict] = field(init=False, default=None)
-    _config: ClientConfig = field(init=False)
     _log = Log()
 
     def __post_init__(self):
-        self._config = ClientConfig.from_api_root(self.api_root)
+        # normalize the API root - this should always be used as base URL
+        # for relative URLs
+        if not self.api_root.endswith("/"):
+            self.api_root = f"{self.api_root}/"
 
-    @classmethod
-    def from_url(cls, detail_url: str) -> "Client":
-        warnings.warn("Client.from_url will be removed in 2.0", DeprecationWarning)
-        parsed_url = urlparse(detail_url)
-
-        # we know that API endpoints look like:
-        # - /base_path/collection/<uuid> or
-        # - /base_path/collection/<uuid>/subcollection or
-        # - /base_path/collection/<uuid>/subcollection/<uuid>
-        # So, splitting on UUIDs gives us the base_path + collection
-        bits = re.split(UUID_PATTERN, parsed_url.path)
-        base_path = (bits[0].rstrip("/").rsplit("/", 1))[0] + "/"
-
-        # register the config
-        config = ClientConfig.from_url(detail_url)
-        alias = config.base_url
-        registry.register(alias, config)
-        return cls(alias, base_path)
-
-    @property
-    def log(self):
+    def _build_url(self, url_like: str):
         """
-        Local log entries.
+        Build a fully qualified URL based on the API root.
+
+        If the URL is fully qualified, return it unmodified. Otherwise, assert that it's
+        a relative path and join it with the API root. If it's not relative but absolute
+        (starting with a slash), emit a debug message.
         """
-        warnings.warn("Client.log will be removed in 2.0", DeprecationWarning)
-        return (
-            entry for entry in self._log.entries() if entry["service"] == self.service
-        )
+        if url_like.startswith("/"):
+            logger.debug(
+                "Received an absolute path '%s', this may not be what you intended. "
+                "Absolute paths discard the path portion of the API configured root.",
+                url_like,
+            )
+            # do not silently correct or strip this, it *may* be intentional
+            return urljoin(self.api_root, url_like)
+
+        # check if it's a fully qualified URL
+        parsed_url = urlparse(url_like)
+        if parsed_url.scheme and parsed_url.netloc and parsed_url.path:
+            return url_like
+        return urljoin(self.api_root, url_like)
+
+    # OpenAPI schema fetching/loading
 
     @property
-    def base_url(self) -> str:
-        default = f"{self._config.base_url}{self.base_path}"
-        return self._base_url or default
-
-    @base_url.setter
-    def base_url(self, base_url: str) -> None:
-        self._base_url = base_url
-
-    @property
-    def schema(self):
+    def schema(self) -> dict:
         if self._schema is None:
             self.fetch_schema()
-        return self._schema
+        return self._schema or {}
+
+    @schema.setter
+    def schema(self, value: dict):
+        self._schema = value
+
+    def fetch_schema(self) -> None:
+        url = self._build_url(self.oas_location)
+        logger.info("Fetching schema at '%s'", url)
+        self._schema = schema_fetcher.fetch(url)
+
+    # Making requests for resources
 
     def pre_request(self, method: str, url: str, **kwargs) -> Any:
         """
@@ -118,7 +133,7 @@ class Client:
         expected_status=200,
         request_kwargs: Optional[dict] = None,
         **kwargs,
-    ) -> Union[List[Object], Object]:
+    ) -> Union[List[Object], Object, None]:
         """
         Make the HTTP request using requests.
 
@@ -129,7 +144,7 @@ class Client:
         :raises: :class:`requests.HTTPException` for internal server errors
         :raises: :class:`ClientError` for HTTP 4xx status codes
         """
-        url = urljoin(self.base_url, path)
+        url = urljoin(self.api_root, path)
 
         if request_kwargs:
             kwargs.update(request_kwargs)
@@ -156,17 +171,7 @@ class Client:
 
         self.post_response(pre_id, response_json)
 
-        self._log.add(
-            self.service,
-            url,
-            method,
-            dict(headers),
-            copy.deepcopy(kwargs.get("data", kwargs.get("json", None))),
-            response.status_code,
-            dict(response.headers),
-            response_json,
-            params=kwargs.get("params"),
-        )
+        # TODO: add check that requests hooks can be added (alternative for logging)
 
         try:
             response.raise_for_status()
@@ -183,10 +188,7 @@ class Client:
     ) -> None:
         pass
 
-    def fetch_schema(self) -> None:
-        url = urljoin(self.base_url, "schema/openapi.yaml")
-        logger.info("Fetching schema at '%s'", url)
-        self._schema = schema_fetcher.fetch(url, {"v": "3"})
+    # Convenience/semantic wrappers
 
     def list(
         self,
@@ -199,7 +201,7 @@ class Client:
         op_suffix = self.operation_suffix_mapping["list"]
         operation_id = f"{resource}{op_suffix}"
         url = get_operation_url(
-            self.schema, operation_id, base_url=self.base_url, **path_kwargs
+            self.schema, operation_id, base_url=self.api_root, **path_kwargs
         )
         if query_params and not params:
             warnings.warn(
@@ -223,7 +225,7 @@ class Client:
         operation_id = f"{resource}{op_suffix}"
         if url is None:
             url = get_operation_url(
-                self.schema, operation_id, base_url=self.base_url, **path_kwargs
+                self.schema, operation_id, base_url=self.api_root, **path_kwargs
             )
         return self.request(url, operation_id, request_kwargs=request_kwargs)
 
@@ -237,7 +239,7 @@ class Client:
         op_suffix = self.operation_suffix_mapping["create"]
         operation_id = f"{resource}{op_suffix}"
         url = get_operation_url(
-            self.schema, operation_id, base_url=self.base_url, **path_kwargs
+            self.schema, operation_id, base_url=self.api_root, **path_kwargs
         )
         return self.request(
             url,
@@ -260,7 +262,7 @@ class Client:
         operation_id = f"{resource}{op_suffix}"
         if url is None:
             url = get_operation_url(
-                self.schema, operation_id, base_url=self.base_url, **path_kwargs
+                self.schema, operation_id, base_url=self.api_root, **path_kwargs
             )
         return self.request(
             url,
@@ -283,7 +285,7 @@ class Client:
         operation_id = f"{resource}{op_suffix}"
         if url is None:
             url = get_operation_url(
-                self.schema, operation_id, base_url=self.base_url, **path_kwargs
+                self.schema, operation_id, base_url=self.api_root, **path_kwargs
             )
         return self.request(
             url,
@@ -305,7 +307,7 @@ class Client:
         operation_id = f"{resource}{op_suffix}"
         if url is None:
             url = get_operation_url(
-                self.schema, operation_id, base_url=self.base_url, **path_kwargs
+                self.schema, operation_id, base_url=self.api_root, **path_kwargs
             )
         return self.request(
             url,
@@ -326,7 +328,7 @@ class Client:
     ) -> Union[List[Object], Object]:
         if url is None:
             url = get_operation_url(
-                self.schema, operation_id, base_url=self.base_url, **path_kwargs
+                self.schema, operation_id, base_url=self.api_root, **path_kwargs
             )
         return self.request(
             url, operation_id, method=method, json=data, request_kwargs=request_kwargs

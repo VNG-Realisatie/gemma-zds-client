@@ -1,6 +1,6 @@
 import requests_mock
 
-from zds_client import Client
+from zds_client import Client, ClientAuth
 
 SCHEMA = {
     "openapi": "3.0.0",
@@ -30,10 +30,11 @@ SCHEMA = {
 
 
 def test_list_request():
-    auth = {"client_id": "yes", "secret": "oh-no"}
-    Client.load_config(dummy={"scheme": "https", "host": "example.com", "auth": auth})
-    client = Client("dummy")
-    client._schema = SCHEMA
+    client = Client(
+        "https://example.com/api/v1",
+        auth=ClientAuth(client_id="yes", secret="oh-no"),
+    )
+    client.schema = SCHEMA
 
     with requests_mock.Mocker() as m:
         m.get("https://example.com/api/v1/some-resource?foo=bar", json=[{"ok": "yes"}])
@@ -48,9 +49,8 @@ def test_list_request():
 
 
 def test_kwargs_forwarded_to_requests():
-    Client.load_config(dummy={"scheme": "https", "host": "example.com"})
-    client = Client("dummy")
-    client._schema = SCHEMA
+    client = Client("https://example.com/api/v1")
+    client.schema = SCHEMA
 
     with requests_mock.Mocker() as m:
         m.get("https://example.com/api/v1/some-resource", json=[{"ok": "yes"}])

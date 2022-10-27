@@ -1,6 +1,6 @@
 import requests_mock
 
-from zds_client import Client
+from zds_client import Client, ClientAuth
 
 SCHEMA = {
     "openapi": "3.0.0",
@@ -17,10 +17,11 @@ SCHEMA = {
 
 
 def test_create_request():
-    auth = {"client_id": "yes", "secret": "oh-no"}
-    Client.load_config(dummy={"scheme": "https", "host": "example.com", "auth": auth})
-    client = Client("dummy")
-    client._schema = SCHEMA
+    client = Client(
+        "https://example.com/api/v1",
+        auth=ClientAuth(client_id="yes", secret="oh-no"),
+    )
+    client.schema = SCHEMA
 
     with requests_mock.Mocker() as m:
         m.post(
@@ -34,10 +35,11 @@ def test_create_request():
 
 
 def test_create_request_extra_headers():
-    auth = {"client_id": "yes", "secret": "oh-no"}
-    Client.load_config(dummy={"scheme": "https", "host": "example.com", "auth": auth})
-    client = Client("dummy")
-    client._schema = SCHEMA
+    client = Client(
+        "https://example.com/api/v1",
+        auth=ClientAuth(client_id="yes", secret="oh-no"),
+    )
+    client.schema = SCHEMA
 
     with requests_mock.Mocker() as m:
         m.post(

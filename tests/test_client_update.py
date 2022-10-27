@@ -1,6 +1,6 @@
 import requests_mock
 
-from zds_client import Client
+from zds_client import Client, ClientAuth
 
 SCHEMA = {
     "openapi": "3.0.0",
@@ -20,10 +20,11 @@ SCHEMA = {
 
 
 def test_update_request():
-    auth = {"client_id": "yes", "secret": "oh-no"}
-    Client.load_config(dummy={"scheme": "https", "host": "example.com", "auth": auth})
-    client = Client("dummy")
-    client._schema = SCHEMA
+    client = Client(
+        "https://example.com/api/v1",
+        auth=ClientAuth(client_id="yes", secret="oh-no"),
+    )
+    client.schema = SCHEMA
 
     with requests_mock.Mocker() as m:
         m.put(
@@ -41,10 +42,11 @@ def test_update_request():
 
 
 def test_update_request_explicit_url():
-    auth = {"client_id": "yes", "secret": "oh-no"}
-    Client.load_config(dummy={"scheme": "https", "host": "example.com", "auth": auth})
-    client = Client("dummy")
-    client._schema = SCHEMA
+    client = Client(
+        "https://example.com/api/v1",
+        auth=ClientAuth(client_id="yes", secret="oh-no"),
+    )
+    client.schema = SCHEMA
 
     with requests_mock.Mocker() as m:
         m.put(
@@ -66,10 +68,11 @@ def test_update_request_explicit_url():
 
 
 def test_partial_update_request():
-    auth = {"client_id": "yes", "secret": "oh-no"}
-    Client.load_config(dummy={"scheme": "https", "host": "example.com", "auth": auth})
-    client = Client("dummy")
-    client._schema = SCHEMA
+    client = Client(
+        "https://example.com/api/v1",
+        auth=ClientAuth(client_id="yes", secret="oh-no"),
+    )
+    client.schema = SCHEMA
 
     with requests_mock.Mocker() as m:
         m.patch(
@@ -87,10 +90,11 @@ def test_partial_update_request():
 
 
 def test_partial_update_request_explicit_url():
-    auth = {"client_id": "yes", "secret": "oh-no"}
-    Client.load_config(dummy={"scheme": "https", "host": "example.com", "auth": auth})
-    client = Client("dummy")
-    client._schema = SCHEMA
+    client = Client(
+        "https://example.com/api/v1",
+        auth=ClientAuth(client_id="yes", secret="oh-no"),
+    )
+    client.schema = SCHEMA
 
     with requests_mock.Mocker() as m:
         m.patch(

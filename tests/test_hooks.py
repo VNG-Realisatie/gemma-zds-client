@@ -19,14 +19,12 @@ class HookClient(Client):
         self.post = response_data
 
 
-HookClient.load_config(tests={"host": "example.com", "scheme": "https"})
-
-
 def test_hooks_fire():
-    client = HookClient("tests", base_path="/")
+    client = HookClient("https://example.com/")
 
     with requests_mock.Mocker() as m:
-        m.register_uri("GET", "https://example.com/test", json={"ok": True})
+        m.get("https://example.com/test", json={"ok": True})
+
         client.request("test", "get_test")
 
     assert client.pre == ("GET", "https://example.com/test")
