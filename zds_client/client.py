@@ -2,14 +2,13 @@ import logging
 import re
 import warnings
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 from urllib.parse import urljoin, urlparse
 
 import requests
 from requests.structures import CaseInsensitiveDict
 
 from .auth import ClientAuth
-from .log import Log
 from .oas import schema_fetcher
 from .schema import get_headers, get_operation_url
 
@@ -38,6 +37,19 @@ def _get_default_op_suffix_mapping() -> Dict[str, str]:
     }
 
 
+def _get_session(client: Optional["Client"] = None) -> requests.Session:
+    """
+    Get a session to leverage connection pooling.
+
+    TODO: this is work in progress
+    """
+    # TODO: cache session on the client instance if provided
+    session = requests.Session()
+    if client and client.request_hooks:
+        session.hooks.update(client.request_hooks)
+    return session
+
+
 @dataclass
 class Client:
     api_root: str
@@ -62,9 +74,16 @@ class Client:
 
     TODO: make this more robust - operationId is an _optional_ key and may be empty.
     """
+    request_hooks: Optional[Dict[str, Callable[..., Any]]] = None
+    """
+    requests library hooks to apply for every request.
+
+    See https://requests.readthedocs.io/en/latest/user/advanced/#event-hooks for
+    details. You can use this to set up request logging or middleware-like processing
+    to the responses.
+    """
 
     _schema: Optional[dict] = field(init=False, default=None)
-    _log = Log()
 
     def __post_init__(self):
         # normalize the API root - this should always be used as base URL
@@ -162,7 +181,8 @@ class Client:
 
         pre_id = self.pre_request(method, url, **kwargs)
 
-        response = requests.request(method, url, **kwargs)
+        with _get_session(self) as session:
+            response = session.request(method, url, **kwargs)
 
         try:
             response_json = response.json()
@@ -170,8 +190,6 @@ class Client:
             response_json = None
 
         self.post_response(pre_id, response_json)
-
-        # TODO: add check that requests hooks can be added (alternative for logging)
 
         try:
             response.raise_for_status()
