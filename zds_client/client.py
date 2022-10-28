@@ -212,7 +212,6 @@ class Client:
         self,
         resource: str,
         params=None,
-        query_params=None,
         request_kwargs: Optional[dict] = None,
         **path_kwargs,
     ) -> List[Object]:
@@ -221,13 +220,6 @@ class Client:
         url = get_operation_url(
             self.schema, operation_id, base_url=self.api_root, **path_kwargs
         )
-        if query_params and not params:
-            warnings.warn(
-                "Client.list 'query_params' kwarg is deprecated, use 'params' instead.",
-                DeprecationWarning,
-            )
-            params = query_params
-
         return self.request(
             url, operation_id, params=params, request_kwargs=request_kwargs
         )
