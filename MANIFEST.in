@@ -1,0 +1,5 @@
+include *.rst
+include LICENSE
+include zds_client/py.typed
+global-exclude __pycache__
+global-exclude *.py[co]
